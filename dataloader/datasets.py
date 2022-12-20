@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Tuple
 import tensorflow as tf
 
@@ -14,7 +15,10 @@ class DataGenerator():
                  validation_split: float=0.2,
                  ) -> None:
         
+        assert Path(directory).is_dir(), f"`{self.directory}` is not a directory."
+        
         # --- Storing basic attributes ---
+        self.directory = directory
         self.batch_size = batch_size
         self.image_size = image_size
         self.shuffle = shuffle
@@ -23,7 +27,7 @@ class DataGenerator():
 
         # --- Generate datasets ---
         self.train, self.val = tf.keras.utils.image_dataset_from_directory(
-            directory=directory,
+            directory=self.directory,
             batch_size=self.batch_size,
             image_size=self.image_size,
             shuffle=self.shuffle,
@@ -31,7 +35,11 @@ class DataGenerator():
             validation_split=self.validation_split,
             subset="both"
         )
-    
+        
+        # --- Optimize pipeline ---
+        self.train = self.train.prefetch(tf.data.AUTOTUNE)
+        self.val = self.val.prefetch(tf.data.AUTOTUNE)
+        
     
     def plot_classes(self):
         plot_classes(ds=self.train)
