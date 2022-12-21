@@ -1,5 +1,6 @@
 # Custom
-tiny-imagenet-200
+tiny-imagenet-200/
+saved_models/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files
