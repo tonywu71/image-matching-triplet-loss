@@ -26,9 +26,9 @@ class DataGenerator():
         self.seed = seed
 
         # --- Generate datasets ---
-        self.train, self.val = tf.keras.utils.image_dataset_from_directory(
+        self.train_unbatched, self.val_unbatched = tf.keras.utils.image_dataset_from_directory(
             directory=self.directory,
-            batch_size=self.batch_size,
+            batch_size=None, # type: ignore
             image_size=self.image_size,
             shuffle=self.shuffle,
             seed=self.seed,
@@ -37,9 +37,12 @@ class DataGenerator():
         )
         
         # --- Optimize pipeline ---
-        self.train = self.train.prefetch(tf.data.AUTOTUNE)
-        self.val = self.val.prefetch(tf.data.AUTOTUNE)
-        
+        self.train = self.train_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.val = self.val_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+    
+    
+    def get_val_one_class(self, class_id: int):
+        return self.val.filter(lambda x, y: y==class_id)
     
     def plot_classes(self):
         plot_classes(ds=self.train)
