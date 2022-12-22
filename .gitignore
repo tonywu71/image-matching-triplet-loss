@@ -2,6 +2,8 @@
 tiny-imagenet-200/
 saved_models/
 .DS_Store
+meta.tsv
+vecs.tsv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

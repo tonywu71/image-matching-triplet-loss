@@ -1,8 +1,26 @@
 from pathlib import Path
 from typing import Tuple
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from dataloader.utils import plot_classes, plot_from_one_class
+from models.feature_model import IMAGE_SIZE
+
+
+def preprocessing_function(x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+    """Preprocessing function to use with map for an unbatched tf.data.Dataset object.
+
+    Args:
+        x (tf.Tensor)
+        y (tf.Tensor)
+
+    Returns:
+        Tuple[tf.Tensor, tf.Tensor]
+    """
+    x = tf.keras.applications.mobilenet.preprocess_input(x)
+    x = tf.image.resize(x, size=IMAGE_SIZE)
+    x = tfa.image.gaussian_filter2d(x) # type: ignore
+    return x, y
 
 
 class DataGenerator():
@@ -12,7 +30,7 @@ class DataGenerator():
                  image_size: Tuple[int, int],
                  shuffle: bool=True,
                  seed: int=0,
-                 validation_split: float=0.2,
+                 validation_split: float=0.2
                  ) -> None:
         
         assert Path(directory).is_dir(), f"`{self.directory}` is not a directory."
@@ -36,13 +54,20 @@ class DataGenerator():
             subset="both"
         )
         
+        # --- Preprocessing ---
+        self.train = self.train_unbatched.map(preprocessing_function)
+        self.val = self.val_unbatched.map(preprocessing_function)
+        
         # --- Optimize pipeline ---
-        self.train = self.train_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
-        self.val = self.val_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.train = self.train.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.val = self.val.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+
+        return
     
     
     def get_val_one_class(self, class_id: int):
         return self.val.filter(lambda x, y: y==class_id)
+    
     
     def plot_classes(self):
         plot_classes(ds=self.train)
