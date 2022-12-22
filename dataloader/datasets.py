@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Tuple
 import tensorflow as tf
@@ -5,6 +6,9 @@ import tensorflow_addons as tfa
 
 from dataloader.utils import plot_classes, plot_from_one_class
 from models.feature_model import IMAGE_SIZE
+
+
+logger = logging.getLogger(__name__)
 
 
 def preprocessing_function(x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -62,6 +66,8 @@ class DataGenerator():
         self.train = self.train.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
         self.val = self.val.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
 
+        logger.info(f"Successfully generated a DataGenerator object from `{directory}`")
+        
         return
     
     

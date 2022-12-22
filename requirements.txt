@@ -9,5 +9,6 @@ matplotlib
 seaborn
 tensorflow
 tensorflow-addons
+tensorflow-datasets
 tensorflow-hub
 optuna
