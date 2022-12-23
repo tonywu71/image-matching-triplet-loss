@@ -1,6 +1,8 @@
 # Custom
 tiny-imagenet-200/
 saved_models/
+logs/
+saved_models/
 .DS_Store
 meta.tsv
 vecs.tsv
