@@ -45,7 +45,7 @@ def train(config_filepath: str, data_generator: DataGenerator) -> Path:
                         callbacks=callbacks)
 
     
-    plot_learning_curve(history, fig_savepath=f"logs/{config['experiment_name']}/")
+    plot_learning_curve(history.history, fig_savepath=f"logs/{config['experiment_name']}/")
     
 
     # --- Save the model ---

@@ -25,6 +25,10 @@ def test_trainer():
         validation_split=VALIDATION_SPLIT
     )
     
+    # Tackle long training by keeping only 1 batch of data
+    data_generator.train = data_generator.train.take(1)
+    data_generator.val = data_generator.val.take(1)
+    
     try:
         model_dirpath = train(CONFIG_FILEPATH, data_generator=data_generator)
         assert model_dirpath.exists()

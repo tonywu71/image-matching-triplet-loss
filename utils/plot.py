@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def plot_learning_curve(history: Dict[str, List[int]], title: Optional[str]=None, fig_savepath: Optional[str]=None):
-    df = pd.DataFrame(history)
+    df = pd.DataFrame(history, columns=["loss", "val_loss"])
     
     fig, ax = plt.subplots(figsize=(8, 5))
     
