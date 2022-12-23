@@ -21,9 +21,9 @@ def preprocessing_function(x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Te
     Returns:
         Tuple[tf.Tensor, tf.Tensor]
     """
-    x = tf.keras.applications.mobilenet.preprocess_input(x)
     x = tf.image.resize(x, size=IMAGE_SIZE)
-    x = tfa.image.gaussian_filter2d(x) # type: ignore
+    x = tf.keras.applications.mobilenet.preprocess_input(x)
+    
     return x, y
 
 

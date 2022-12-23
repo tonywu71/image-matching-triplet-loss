@@ -1,4 +1,6 @@
-experiment_name: "test"
+experiment_name: "efficientnet"
 
-epochs: 10
-early_stopping_patience: 3
+feature_extractor: "efficientnet"
+dropout: 0.5
+epochs: 50
+early_stopping_patience: 5

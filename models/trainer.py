@@ -22,7 +22,7 @@ def train(config_filepath: str, data_generator: DataGenerator) -> Path:
     
     
     # --- Load the model ---
-    model = load_and_compile_model(model="efficientnet")
+    model = load_and_compile_model(model_name=config["feature_extractor"], dropout=config["dropout"])
     
     log_dir = Path(f"logs/{config['experiment_name']}/fit/")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -45,7 +45,7 @@ def train(config_filepath: str, data_generator: DataGenerator) -> Path:
                         callbacks=callbacks)
 
     
-    plot_learning_curve(history.history, fig_savepath=f"logs/{config['experiment_name']}/")
+    plot_learning_curve(history.history, fig_savepath=f"logs/{config['experiment_name']}/learning_curve.png")
     
 
     # --- Save the model ---
