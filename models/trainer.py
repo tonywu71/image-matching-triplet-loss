@@ -12,29 +12,12 @@ from utils.plot import plot_learning_curve
 logger = logging.getLogger(__name__)
 
 
-DATA_DIRPATH = "tiny-imagenet-200/train/"
-BATCH_SIZE = 256
-IMAGE_SIZE = (64, 64)
-VALIDATION_SPLIT = 0.2
-
-
-def train(config_filepath: str, seed: int=0):    
+def train(config_filepath: str, data_generator: DataGenerator) -> Path:
     # ---- Load config ---
     config = load_config(config_filepath)
     
     
     # --- Load data ---
-    assert Path(DATA_DIRPATH).exists()
-    
-    data_generator = DataGenerator(
-        directory=DATA_DIRPATH,
-        batch_size=BATCH_SIZE,
-        image_size=IMAGE_SIZE,
-        shuffle=True,
-        seed=seed,
-        validation_split=VALIDATION_SPLIT
-    )
-
     ds_train, ds_val = data_generator.train, data_generator.val
     
     
@@ -72,4 +55,4 @@ def train(config_filepath: str, seed: int=0):
     
     logger.info(f"Successfully saved model at `{model_dirpath}`.")
     
-    return
+    return model_dirpath
