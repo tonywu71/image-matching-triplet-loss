@@ -17,7 +17,9 @@ def train(config: dict, data_generator: DataGenerator) -> Path:
     ds_train, ds_val = data_generator.train, data_generator.val
     
     # --- Load the model ---
-    model = load_and_compile_model(model_name=config["feature_extractor"], dropout=config["dropout"])
+    model = load_and_compile_model(model_name=config["feature_extractor"],
+                                   dropout=config["dropout"],
+                                   image_augmentation=config["image_augmentation"])
     
     # --- Callbacks ---
     log_dir = Path(f"logs/{config['experiment_name']}/fit/")

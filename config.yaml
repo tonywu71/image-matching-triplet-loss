@@ -1,6 +1,7 @@
 experiment_name: "efficientnet"
 
 seed: 0  # for train / validation split
+image_augmentation: True
 
 feature_extractor: "efficientnet"
 dropout: 0.5
