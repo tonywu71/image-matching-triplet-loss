@@ -1,5 +1,7 @@
 experiment_name: "efficientnet"
 
+seed: 0  # for train / validation split
+
 feature_extractor: "efficientnet"
 dropout: 0.5
 epochs: 50
