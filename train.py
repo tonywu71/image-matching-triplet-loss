@@ -45,7 +45,8 @@ def main(config_filepath: str=typer.Option(...),
     
     # --- Visualization ---
     model = tf.keras.models.load_model(model_dirpath)
-    save_embeddings_for_tf_projector(model, ds_val=data_generator.val) # type: ignore
+    save_embeddings_for_tf_projector(model, ds_val=data_generator.val, # type: ignore
+                                     experiment_name=config["experiment_name"])
     
     return
 

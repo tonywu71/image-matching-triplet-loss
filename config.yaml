@@ -5,4 +5,4 @@ seed: 0  # for train / validation split
 feature_extractor: "efficientnet"
 dropout: 0.5
 epochs: 50
-early_stopping_patience: 5
+early_stopping_patience: 10

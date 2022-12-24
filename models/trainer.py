@@ -39,7 +39,9 @@ def train(config: dict, data_generator: DataGenerator) -> Path:
                         validation_data=ds_val,
                         callbacks=callbacks)
 
-    plot_learning_curve(history.history, fig_savepath=f"logs/{config['experiment_name']}/learning_curve.png")
+    learning_curve_filepath = Path(f"logs/{config['experiment_name']}/learning_curve-{datetime.now().strftime('%Y%m%d-%H%M%S')}.png")
+    learning_curve_filepath.mkdir(parents=True, exist_ok=True)
+    plot_learning_curve(history.history, fig_savepath=str(learning_curve_filepath))
     
     # --- Save the model ---
     model_dirpath = Path(f"saved_models/{config['experiment_name']}")
