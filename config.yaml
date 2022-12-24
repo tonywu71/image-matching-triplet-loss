@@ -1,4 +1,4 @@
-experiment_name: "efficientnet"
+experiment_name: "efficientnet_with_image_augmentation"
 
 seed: 0  # for train / validation split
 image_augmentation: True
