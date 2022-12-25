@@ -1,7 +1,7 @@
 experiment_name: "efficientnet_with_image_augmentation"
 
 seed: 0  # for train / validation split
-image_augmentation: True
+image_augmentation: False  # due to https://github.com/keras-team/keras-cv/issues/581, image_augmentation must be set to False
 
 feature_extractor: "efficientnet"
 dropout: 0.5
