@@ -9,7 +9,10 @@ import tensorflow_datasets as tfds
 
 from train import IMAGE_SIZE_DATASET
 
+
 logger = logging.getLogger(__name__)
+
+
 EMBEDDINGS_DIRPATH = Path("embeddings")
 
 

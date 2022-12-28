@@ -62,7 +62,7 @@ class DataGenerator():
         self.seed = seed
 
         # --- Generate datasets ---
-        self.train_unbatched, self.val_unbatched = tf.keras.utils.image_dataset_from_directory(
+        self.train_raw, self.val_raw = tf.keras.utils.image_dataset_from_directory(
             directory=self.directory,
             batch_size=None, # type: ignore
             image_size=self.image_size,
@@ -73,8 +73,8 @@ class DataGenerator():
         )
         
         # --- Preprocessing ---
-        self.train_unbatched = self.train_unbatched.map(_preprocessing_function)
-        self.val_unbatched = self.val_unbatched.map(_preprocessing_function)
+        self.train_unbatched = self.train_raw.map(_preprocessing_function)
+        self.val_unbatched = self.val_raw.map(_preprocessing_function)
         
         # --- Optimize pipeline ---
         self.train = self.train_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
