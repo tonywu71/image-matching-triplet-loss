@@ -37,8 +37,8 @@ class ImageMatcher():
         return self.model(dataset)  # type: ignore
     
     
-    def evaluate(self, dataset: tf.data.Dataset, steps: Optional[int]=None) -> float:
-        auc = self.model.evaluate(dataset, steps=steps)[1] # first element is the undefined loss
+    def get_auc(self, dataset: tf.data.Dataset, steps: Optional[int]=None) -> float:
+        _, auc = self.model.evaluate(dataset, steps=steps) # first element is the undefined loss
         return auc
     
     

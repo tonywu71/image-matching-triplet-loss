@@ -20,7 +20,7 @@ def match_mapping(x, y) -> Tuple[tf.Tensor, tf.Tensor]:
     return (tf.stack([x_1, x_2], axis=0), tf.cast(cls_1 == cls_2, dtype=tf.uint8))  # type: ignore
 
 
-def get_pairwise_dataset(data_generator: DataGenerator, image_size: Tuple[int, int]) -> tf.data.Dataset:
+def get_pairwise_dataset(dataset: tf.data.Dataset, image_size: Tuple[int, int]) -> tf.data.Dataset:
     """Get the pairwise dataset for our end-to-end model. Note that the output Dataset is not batched.
 
     Args:
@@ -30,8 +30,8 @@ def get_pairwise_dataset(data_generator: DataGenerator, image_size: Tuple[int, i
     Returns:
         tf.data.Dataset
     """
-    ds_pairs = tf.data.Dataset.from_generator(get_generator_2_combination_from_datasets(
-        dataset=data_generator.val_unbatched),
+    ds_pairs = tf.data.Dataset.from_generator(
+        get_generator_2_combination_from_datasets(dataset=dataset),
         output_signature=(
               (
                   tf.TensorSpec(shape=(*image_size, 3), dtype=tf.float32),  # type: ignore
