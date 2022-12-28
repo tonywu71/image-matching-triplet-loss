@@ -1,0 +1,14 @@
+# python 3.10.8
+ipykernel
+pyyaml
+typer[all]
+tqdm
+numpy
+pandas
+matplotlib
+seaborn
+tensorflow
+tensorflow-addons
+tensorflow-datasets
+tensorflow-hub
+optuna

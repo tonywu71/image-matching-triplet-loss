@@ -1,0 +1,4 @@
+experiment_name: "config_test"
+
+epochs: 1
+early_stopping_patience: 1
