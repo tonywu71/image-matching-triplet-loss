@@ -4,9 +4,8 @@ from datetime import datetime
 
 import tensorflow as tf
 
-from dataloader.datasets import DataGenerator
+from dataloader.data_generator import DataGenerator
 from models.feature_model import load_and_compile_model
-from utils.helper import load_config
 from utils.plot import plot_learning_curve
 
 logger = logging.getLogger(__name__)

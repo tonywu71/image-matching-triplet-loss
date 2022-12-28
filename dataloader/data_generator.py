@@ -2,16 +2,30 @@ import logging
 from pathlib import Path
 from typing import Tuple
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 from dataloader.utils import plot_classes, plot_from_one_class
-from models.feature_model import IMAGE_SIZE
+from models.feature_model import IMAGE_SIZE_EFFICIENTNET
 
 
 logger = logging.getLogger(__name__)
 
 
-def preprocessing_function(x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+def preprocess_inputs(x: tf.Tensor) -> tf.Tensor:
+    """Resize the image and applies the specific preprocesing related to the
+    model_feature pre-trained layer.
+
+    Args:
+        x (tf.Tensor)
+
+    Returns:
+        tf.Tensor
+    """
+    x = tf.image.resize(x, size=IMAGE_SIZE_EFFICIENTNET)
+    x = tf.keras.applications.mobilenet.preprocess_input(x)
+    return x
+
+
+def _preprocessing_function(x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
     """Preprocessing function to use with map for an unbatched tf.data.Dataset object.
 
     Args:
@@ -21,8 +35,8 @@ def preprocessing_function(x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Te
     Returns:
         Tuple[tf.Tensor, tf.Tensor]
     """
-    x = tf.image.resize(x, size=IMAGE_SIZE)
-    x = tf.keras.applications.mobilenet.preprocess_input(x)
+    
+    x = preprocess_inputs(x)
     
     return x, y
 
@@ -59,12 +73,12 @@ class DataGenerator():
         )
         
         # --- Preprocessing ---
-        self.train = self.train_unbatched.map(preprocessing_function)
-        self.val = self.val_unbatched.map(preprocessing_function)
+        self.train_unbatched = self.train_unbatched.map(_preprocessing_function)
+        self.val_unbatched = self.val_unbatched.map(_preprocessing_function)
         
         # --- Optimize pipeline ---
-        self.train = self.train.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
-        self.val = self.val.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.train = self.train_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.val = self.val_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
 
         logger.info(f"Successfully generated a DataGenerator object from `{directory}`")
         

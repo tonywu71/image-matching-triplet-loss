@@ -4,11 +4,12 @@ import tensorflow_hub as hub
 
 from models.preprocessing import get_image_augmentation_layer
 
+
 TF_HUB_MODELS = {
     "resnet50": "https://tfhub.dev/tensorflow/resnet_50/feature_vector/1",
     "efficientnet": "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_b0/feature_vector/2"
 }
-IMAGE_SIZE = (224, 224)
+IMAGE_SIZE_EFFICIENTNET = (224, 224)
 
 
 def get_feature_extractor(model_name: str) -> tf.keras.Model:

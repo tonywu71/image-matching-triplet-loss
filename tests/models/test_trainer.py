@@ -1,6 +1,6 @@
 from pathlib import Path
 import shutil
-from dataloader.datasets import DataGenerator
+from dataloader.data_generator import DataGenerator
 from models.trainer import train
 from utils.helper import load_config
 
