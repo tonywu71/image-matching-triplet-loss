@@ -9,6 +9,7 @@ from models.feature_model import load_and_compile_model
 from utils.plot import plot_learning_curve
 
 logger = logging.getLogger(__name__)
+HISTOGRAM_FREQ = 5
 
 
 def train(config: dict, data_generator: DataGenerator) -> Path:    
@@ -17,6 +18,8 @@ def train(config: dict, data_generator: DataGenerator) -> Path:
     
     # --- Load the model ---
     model = load_and_compile_model(model_name=config["feature_extractor"],
+                                   embedding_dim=config["embedding_dim"],
+                                   intermediate_linear_units=config["intermediate_linear_units"],
                                    dropout=config["dropout"],
                                    image_augmentation=config["image_augmentation"])
     
@@ -31,7 +34,7 @@ def train(config: dict, data_generator: DataGenerator) -> Path:
             monitor="val_loss",
             mode="min",
             restore_best_weights=True),
-        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=5) # type: ignore
+        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=HISTOGRAM_FREQ) # type: ignore
     ]
     
     # --- Train the model ---

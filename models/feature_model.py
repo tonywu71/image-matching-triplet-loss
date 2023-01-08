@@ -1,8 +1,10 @@
+from typing import List, Optional, Union
 import tensorflow as tf
 import tensorflow_addons as tfa
 import tensorflow_hub as hub
 
 from models.preprocessing import get_image_augmentation_layer
+from models.ff_block import FFBlock
 
 
 TF_HUB_MODELS = {
@@ -20,7 +22,22 @@ def get_feature_extractor(model_name: str) -> tf.keras.Model:
     return feature_extractor
 
 
-def load_and_compile_model(model_name: str, dropout: float=0., image_augmentation: bool=False) -> tf.keras.Model:
+def load_and_compile_model(model_name: str,
+                           embedding_dim: int=256,
+                           intermediate_linear_units: Optional[Union[int, List[int]]]=None,
+                           dropout: float=0.,
+                           image_augmentation: bool=False) -> tf.keras.Model:
+    
+    if intermediate_linear_units is None:
+        intermediate_linear_units = []
+    else:
+        if type(intermediate_linear_units) is int:
+            intermediate_linear_units = [intermediate_linear_units] # convert to a list of 1 element
+        elif type(intermediate_linear_units) is list:
+            intermediate_linear_units = intermediate_linear_units
+        else:
+            raise TypeError("`intermediate_linear_units` should be an integer or a list of integer.")
+    
     feature_extractor = get_feature_extractor(model_name)
     
     list_layers = []
@@ -30,20 +47,18 @@ def load_and_compile_model(model_name: str, dropout: float=0., image_augmentatio
     
     list_layers.extend([
         feature_extractor,
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(units=512),
-        tf.keras.layers.ReLU(),
-        tf.keras.layers.Dropout(dropout),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dense(units=256),
-        tf.keras.layers.Dropout(dropout),
-        tf.keras.layers.ReLU(),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dense(units=256),
+        tf.keras.layers.Flatten()
+    ])
+    
+    for units in intermediate_linear_units:
+        list_layers.append(FFBlock(units=units, dropout=dropout))
+
+    list_layers.extend([
+        tf.keras.layers.Dense(units=embedding_dim),
         tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=1)) # L2 normalize embeddings for triplet loss
     ])
     
-    model_name = tf.keras.Sequential(list_layers)
+    model_name = tf.keras.Sequential(list_layers, name="feature_model")
 
     model_name.compile(
         optimizer=tf.keras.optimizers.Adam(),

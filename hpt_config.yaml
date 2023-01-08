@@ -1,0 +1,14 @@
+study_name: "hpt_study-0"
+
+seed: 0
+image_augmentation: False
+
+feature_extractor: "efficientnet"
+embedding_dim_grid: [64, 128, 256, 512]
+intermediate_linear_units_grid: ["[]", "[256]", "[256, 128]", "[512]", "[512, 256]"]  # must be a list of strings for Optuna compatibility
+dropout_grid: [0.4, 0.5, 0.6, 0.7, 0.8]
+
+epochs: 1
+early_stopping_patience: 3
+
+n_trials: 2
