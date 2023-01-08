@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 from PIL import Image
@@ -13,13 +14,13 @@ from train import IMAGE_SIZE_DATASET
 logger = logging.getLogger(__name__)
 
 
-EMBEDDINGS_DIRPATH = Path("embeddings")
+PROJECTOR_DIRPATH = Path("projector")
 
 
-def save_embeddings_for_tf_projector(model: tf.keras.Model,
-                                     ds_val: tf.data.Dataset,
-                                     experiment_name: str):
-    savedir = EMBEDDINGS_DIRPATH / f"{experiment_name}"
+def save_embeddings_and_metadata(model: tf.keras.Model,
+                                 ds_val: tf.data.Dataset,
+                                 experiment_name: str) -> Tuple[str, str]:
+    savedir = PROJECTOR_DIRPATH / f"{experiment_name}"
     savedir.mkdir(parents=True, exist_ok=True)
     
     # Evaluate the network:
@@ -38,10 +39,10 @@ def save_embeddings_for_tf_projector(model: tf.keras.Model,
 
     logger.info(f"Metadata successfully saved at `{meta_filepath}`.")
     
-    return
+    return str(vecs_filepath), str(meta_filepath)
 
 
-def generate_sprite(ds_val: tf.data.Dataset):
+def generate_sprite(ds_val: tf.data.Dataset, experiment_name: str) -> str:
     images_pil = []
 
     for x, y in ds_val: 
@@ -63,4 +64,10 @@ def generate_sprite(ds_val: tf.data.Dataset):
         h_loc = IMAGE_SIZE_DATASET[1] * div
         spriteimage.paste(image, (w_loc, h_loc))
 
-    spriteimage.convert("RGB").save("sprite.jpg", transparency=0)
+    savedir = PROJECTOR_DIRPATH / f"{experiment_name}"
+    sprite_filepath = savedir / "sprite.jpg"
+    spriteimage.convert("RGB").save(sprite_filepath, transparency=0)
+    
+    logger.info(f"Sprite successfully saved at `{sprite_filepath}`.")
+    
+    return str(sprite_filepath)
