@@ -1,4 +1,4 @@
-from dataloader.datasets import DataGenerator
+from dataloader.data_generator import DataGenerator
 
 def test_DataGenerator():
     try:
