@@ -6,98 +6,68 @@ Candidate number: K5013
 
 [TOC]
 
-## Introduction
+<div style="page-break-after: always;"></div>
+
+## TODO
+
+- [ ] Train from HPT result
+- [ ] Run E2E and jot down the final AUC
+- [ ] Run Tensorflow Projector
+
+
+
+## 1. Introduction
+
+### 1.1. Goal of the study
 
 We want to create a model for the task of image matching data from the [Tiny ImageNet Visual Recognition Challenge dataset](https://paperswithcode.com/dataset/tiny-imagenet).
 
+Image matching is a process in machine learning that involves finding similar images in a dataset. Image matching can be used for a variety of applications, such as image retrieval, object recognition, and duplication detection.
 
+There are several approaches to image matching in machine learning, including:
 
-## Network architecture
+1. Feature-based matching: In this approach, images are represented as sets of features, such as points, lines, or corners, and matching is performed based on the similarity of these features.
+2. Distance-based matching: In this approach, images are represented as vectors in a high-dimensional space and matching is performed based on the distance between the vectors.
+3. Hash-based matching: In this approach, images are represented as hashes, which are compact, fixed-length representations of the images. Matching is performed by comparing the hashes of the images.
+4. Deep learning-based matching: In this approach, images are fed into a convolutional neural network (CNN) trained to recognize patterns in the images. Matching is performed based on the output of the CNN.
 
-### Siamese Network
-
-The Siamese Network was first introduced in *Siamese Neural Networks for One-shot Image Recognition, Koch et al., 2015* and allows to compute similarity between 2 inputs. Therefore, image matching can be implemented by outputting  1 (for similar images) if and only if the output of the Siamese Network is greater than a given threshold.
-
-As the name suggests, a Siamese network consists of 2 branches that share the same weights to ensure the symmetry of our distance measure. The branches are usually made of convolution layers. We picked a convolution system for 2 reasons:
-
-- they are biased with the spatial distribution of images (i.e. pixel neighbors are likely to be correlated)
-- they have much less weights than a equivalent dense feed-forward layer.
-
-For our model, we can use a usual convolutional architecture like VGG-16, ResNet50 or Inception. Doing so will also allow to use transfer-learning to speed up our training.
+We will implement a distance-based matching model based on *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015* which introduced a state-of-the-art technique in face matching. Note that we will make the extra assumption that this technique can generalize to generic image matching.
 
 
 
-## Loss
+### 1.2. Code repository
 
-**Goal:** We want to ensure that an image $x_i^a$ (*anchor*) of a specific class is closer to all other images  $x_i^p$ (*positive*) of the same person than it is to any image  $x_i^n$ (*negative*) of any other person.
+Particular care has been taken in making the code clean, efficient and modular.
 
+#### 1.2.1. Main files
 
-
-Mathematically speaking, we want:
-$$
-\forall\left(f\left(x_i^a\right), f\left(x_i^p\right), f\left(x_i^n\right)\right) \in \mathcal{T}, \ 
-\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2+\alpha<\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2
-$$
-with:
-
-- $f$ the embedding function
-- $\mathcal T$ the set of all valid triplets in the training set (note that the fact that a given example $x_i$ belongs to a triplet depends on its embedding hence on $f$ a priori)
-- $\alpha$ the margin
+- `hpt.py` is used to perform Hyperparameter Tuning (HPT)
+- `train.py` is used to train a Feature Model (cf [Section 3.4](3.4. Feature Model))
+- `test_e2e.ipynb` is used to create and evaluate an ImageMatcher model
 
 
 
-<img src="https://omoindrot.github.io/assets/triplet_loss/triplets.png" style="zoom:50%;" />
+#### 1.2.2. Environment setup
+
+Create an environment with `python 3.10.8`  and run the following command to install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
 
 
 
-Hence, the triplet loss $L$ can be defined as the following function:
-$$
-L = \sum_i^N\left[\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2-\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2+\alpha\right]
-$$
+<div style="page-break-after: always;"></div>
 
+## 2. Dataset
 
-## Metrics
-
-The main metric we will use is the ROC AUC which stands for Receiver Operating Characteristic's Area Under the Curve. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
-Moreover, plotting the ROC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (e.g. for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
-
-
-
-If we set a threshold, then we can also consider the confusion matrix as a second metric.
-
-
-
-## Implementation
-
-The previously described model uses hard negatives for the triplet loss: we will refer it as a hard triplet loss.
-
-The first way to produce such triplets is to search through the whole datasets for these hard negatives. Even worse, this has to be done before each epoch as the change in weights implies a change in which example is a hard negative. This procedure is called offline triplet mining and is clearly not efficient. 
-
-
-
-Instead, we will use a different method called online triplet mining which was also introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*. Not only is this approach faster, but it also the easiest way to implement it using Tensorflow's `tfa.losses.TripletSemiHardLoss()` function. What this functions does is finding these the semi-hard negatives in each batch which are defined by the examples $n$ such that $d(a, p) < d(a, n) < d(a, p) + margin$.
-
-
-
-On top of that,  `tfa.losses.TripletSemiHardLoss()`  works with a single feature extractor so there is no need to create the Siamese Network for the training.
-
-
-
-**Note:** Nonetheless, it will be necessary to build a Siamese Network when we will implement our end-to-end model as we expect the latter to take 2 images as inputs.
-
-
-
-## Training procedure
-
-### Dataset
-
-#### Introduction
+### 2.1. Introduction
 
 The Tiny ImageNet Visual Recognition Challenge dataset contains images from 200 different classes. Each image has a size of 64 * 64.
 
 
 
-#### Class Distribution
+### 2.2. Class Distribution
 
 For a classification task, the first thing to do is to assess if there is some class imbalance. 
 
@@ -105,23 +75,25 @@ For a classification task, the first thing to do is to assess if there is some c
 
 <p align = "center"> <b>Fig. ????</b></p>
 
-We can see on the above-plotted histogram that all classes have a number of examples between 370 and 420 while most of them have 400 examples. Thus, there is but little class imbalance.
+We can see on the above-plotted histogram that all classes have a number of examples between 370 and 420 while most of them have 400 examples. Thus, there is but little class imbalance. Hence, we won't have to downsample or upsample some of our classes.
 
 
 
-#### Data split
+### 2.3. Data split
 
-#TODO: Implement train/val/test split
+The test set is only used to evaluate our model and not used during the training.
+
+This guarantees 2 things that the model will not overfit on the test set. This could happen during the Hyperparameter Tuning or during the training because of the Early Stopping (cf [Section 4.2](4.2. Early Stopping)).
 
 
 
-#### Data Augmentation
+### 2.4. Data Augmentation
 
 According to figure ???, each class has a number of examples close to 400 which is quite little. One solution is to implement Data Augmentation. In other words, we will perform random transformations of our training image while keeping the same label. Doing so will drastically increase the number of examples per class while making the model much more robust.
 
 
 
-In Tensorflow, data augmentation is built-in in one of the model's layer itself which is implemented by the following code in `models/preprocessing.py`:
+In Tensorflow, data augmentation is built-in in one of the model's layer itself which is implemented by the following code in `models/`:
 
 ```python
 def get_image_augmentation_layer() -> tf.keras.layers.Layer:    
@@ -144,12 +116,458 @@ def get_image_augmentation_layer() -> tf.keras.layers.Layer:
 
 
 
+**Note:** There is a known issue on the [Tensorflow Github respository](https://github.com/keras-team/keras-cv/issues/581) about a significant slow down in performance when using image augmentation layers. For this reason, we will keep the `image_augmentation` option in our model to `False` but this feature is fully-functional in our project.
 
 
 
+<div style="page-break-after: always;"></div>
 
-## Tensorflow Projector
+## 3. Model Architecture
 
-One way to visually assess that our model is correctly trained is to use [Tensorflow Projector](https://projector.tensorflow.org) to visualize a 3D representation of our embeddings. If the model is trained correctly, then similar images should be close to each other.
+### 3.1. Siamese Network
+
+The Siamese Network was first introduced in *Siamese Neural Networks for One-shot Image Recognition, Koch et al., 2015* and allows to compute similarity between 2 inputs. Therefore, image matching can be implemented by outputting  1 (for similar images) if and only if the output of the Siamese Network is greater than a given threshold.
+
+As the name suggests, a Siamese network consists of 2 branches that share the same weights to ensure the symmetry of our distance measure. The branches are usually made of convolution layers. We picked a convolution system for 2 reasons:
+
+- they are biased with the spatial distribution of images (i.e. pixel neighbors are likely to be correlated)
+- they have much less weights than a equivalent dense feed-forward layer.
+
+For our model, we can use a usual convolutional architecture like VGG-16, ResNet50 or Inception. Doing so will also allow to use transfer-learning to speed up our training.
+
+
+
+### 3.2. Triplet Loss
+
+For the best performance, let's implement the Triplet Loss introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*.
+
+**Goal:** We want to ensure that an image $x_i^a$ (*anchor*) of a specific class is closer to all other images  $x_i^p$ (*positive*) of the same person than it is to any image  $x_i^n$ (*negative*) of any other person.
+
+This is an example of valid triplet from our dataset:
+
+![valid_triplet](figs/triplet_loss/valid_triplet.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+Mathematically speaking, we want:
+$$
+\forall\left(f\left(x_i^a\right), f\left(x_i^p\right), f\left(x_i^n\right)\right) \in \mathcal{T}, \ 
+\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2+\alpha<\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2
+$$
+with:
+
+- $f$ the embedding function
+- $\mathcal T$ the set of all valid triplets in the training set (note that the fact that a given example $x_i$ belongs to a triplet depends on its embedding hence on $f$ a priori)
+- $\alpha$ the margin
+
+
+
+![triplets](figs/triplet_loss/triplets.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+Hence, the triplet loss $L$ can be defined as the following function:
+$$
+L = \sum_i^N\left[\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2-\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2+\alpha\right]
+$$
+
+
+
+### 3.3. Online TripletLoss
+
+The previously described model uses hard negatives for the triplet loss: we will refer it as a hard triplet loss.
+
+The first way to produce such triplets is to search through the whole datasets for these hard negatives. Even worse, this has to be done before each epoch as the change in weights implies a change in which example is a hard negative. This procedure is called offline triplet mining and is clearly not efficient. 
+
+Instead, we will use a different method called online triplet mining which was also introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*. Not only is this approach faster, but it also the easiest way to implement it using Tensorflow's `tfa.losses.TripletSemiHardLoss()` function. What this functions does is finding these the semi-hard negatives in each batch which are defined by the examples $n$ such that $d(a, p) < d(a, n) < d(a, p) + margin$.
+
+On top of that,  `tfa.losses.TripletSemiHardLoss()`  works with a single feature extractor so there is no need to create the Siamese Network for the training.
+
+
+
+**Note:** Nonetheless, it will be necessary to build a Siamese Network when we will implement our end-to-end model as we expect the latter to take 2 images as inputs.
+
+
+
+### 3.4. Feature Extractor and Transfer Learning
+
+Transfer learning is a machine learning technique where a model trained on one task is re-purposed on a second related task. Transfer learning is useful when the second task has a limited amount of labeled data, or when the data distribution between the two tasks is significantly different.
+
+In our case study, we will use transfer learning to avoid having to train our model from scratch as we only have limited computing power.
+
+Note that there are two main approaches to transfer learning: feature-based and fine-tuning. In feature-based transfer learning, the pre-trained model is used as a fixed feature extractor, where the output of the pre-trained model's layers are fed into a new model that is trained to perform the target task. For the sake of simplicity, we will stick to a feature-based transfer for our Image Matcher task.
+
+Tensorflow Hub is a repository of trained machine learning models ready to use. We will use it to get our fixed feature extractor.
+
+<img src="https://www.tensorflow.org/static/site-assets/images/project-logos/tensorflow-hub-logo-social.png" style="zoom:20%;" />
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+We tried [ResNet50](https://tfhub.dev/tensorflow/resnet_50/feature_vector/1) and [EfficientNet](https://tfhub.dev/google/collections/efficientnet/1) as our feature extractor. After many experiments, we observed that `EfficientNet` is both more performant and quicker to train. Hence, we will make our transfer learning from EfficientNet.
+
+Note that the user can use any other feature extractor by adding the corresponding TfHub link in the `TF_HUB_MODELS` constant in `models/feature_model.py`. Here is a snippet of the script in question:
+
+```python
+TF_HUB_MODELS = {
+    "resnet50": "https://tfhub.dev/tensorflow/resnet_50/feature_vector/1",
+    "efficientnet": "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_b0/feature_vector/2"
+}
+IMAGE_SIZE_EFFICIENTNET = (224, 224)
+
+
+def get_feature_extractor(model_name: str) -> tf.keras.Model:
+    if model_name in TF_HUB_MODELS:
+        feature_extractor = hub.KerasLayer(TF_HUB_MODELS[model_name], trainable=False)
+    else:
+        raise ValueError('Only "efficientnet" and "resnet50" are supported.')
+    return feature_extractor
+```
+
+
+
+### 3.4. Feature Model
+
+#### 3.4.1. From 3D to 2D with `Flatten`
+
+The feature model obtained from TfHub returns a 3D tensor because of its convolutional nature. To process it any further, we will first use a `tf.keras.layers.Flatten`  layer to map it to a 2D tensor.
+
+#### 3.4.2. Feed-Forward Blocks
+
+Next, we will add some intermediate feed-forward blocks to increase the depth of our network and hopefully get better performance. A feed-forward block is a custom layer defined by the following class in `models/ff_block.py`:
+
+```python
+class FFBlock(tf.keras.layers.Layer):
+    def _build_layer(self):
+        list_layers = [
+            tf.keras.layers.Dense(units=self.units),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.ReLU(),
+            tf.keras.layers.Dropout(self.dropout)
+        ]
+        return tf.keras.Sequential(list_layers)
+        
+    
+    def __init__(self, units: int, dropout: float=0.):
+        super().__init__()
+        
+        self.units = units
+        self.dropout = dropout
+        
+        self.layer = self._build_layer()
+        
+
+    def call(self, inputs):
+        return self.layer(inputs)
+
+    def get_config(self):
+        base_config = super().get_config()
+        return {
+            **base_config,
+            "units": self.units,
+            "dropout": self.dropout
+        }
+```
+
+In summary, a Feed-Forward block has the following sequential structure:
+
+```mermaid
+graph LR
+subgraph Feed Forward Block
+Dense --> BatchNorm --> ReLU --> Dropout
+end
+```
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+
+
+#### 3.4.3. Embedding and L2 normalization
+
+Finally, we need to project our vectors to a vector space with the given embedding dimension. According to the *FaceNet* paper, we also want constrain this embedding to live on the d-dimensional hypersphere *i.e.*:
+$$
+\forall x \in \mathbb{R}^d,  \ \|f(x)\|_2=1
+$$
+
+
+Thus, we will implement the final layers of our feature model as such:
+
+```python
+    list_layers.extend([
+        tf.keras.layers.Dense(units=embedding_dim),
+        tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=1)) # L2 normalize embeddings for triplet loss
+    ])
+```
+
+
+
+Note that there is a tradeoff for the number of units / embedding dimension of the final dense layer:
+
+- On the one hand, the higher the embedding dimension and the more information the model will be able to encode
+- On the other hand, if we choose an embedding space of high dimensions, the L2 distance between two points will tend to increase as the number of dimensions increases. This phenomenon is known as the "curse of dimensionality."
+
+It is hard to assess which value of `embedding_dim` provides the best performance for our model. Therefore, we will perform a Hyperparameter Tuning in [Section 5](#5. Hyperparameter Tuning (HPT)) to pick its optimal value.
+
+
+
+#### 3.4.4. Complete architecture
+
+```mermaid
+graph LR
+  subgraph Feature Model
+    A(Feature Extractor) --> B1(Feed-Forward Block #1) --> B2(Feed-Forward Block #2) --> B_others(...) -->BN(Feed-Forward Block #N) --> C(Embedding) --> D(L2 Normalization)
+  end
+```
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+
+
+### 3.5. ImageMatcher (E2E model)
+
+#TOFILL: ...
+
+
+
+### 3.6. Metrics
+
+The main metric we will use is the ROC AUC which stands for Receiver Operating Characteristic's Area Under the Curve. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
+Moreover, plotting the ROC AUC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (e.g. for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
+
+If we set a threshold, then we can also consider the confusion matrix as a second metric.
+
+
+
+<div style="page-break-after: always;"></div>
+
+## 4. Model Training
+
+### 4.1. Model configs
+
+For clarity, every architecture / hyperparameter change will be done from a YAML configuration file. Here is an example of such config:
+
+```yaml
+experiment_name: "efficientnet_with_ff_block"
+
+seed: 0
+image_augmentation: False
+
+feature_extractor: "efficientnet"
+embedding_dim: 128
+intermediate_ff_block_units: [512, 256]
+dropout: 0.5
+
+epochs: 50
+early_stopping_patience: 10
+```
+
+
+
+### 4.2. Early Stopping
+
+Early Stopping is motivated by 2 reasons:
+
+- We need a criterion to stop the training in time. The reason is that if the number of epochs is too big, the model can overfit on the training set
+- We want the Hyperparameter Tuning to be as fast as possible
+
+
+
+### 4.3. Tensorboard
+
+TOFILL: ...
+
+<div style="page-break-after: always;"></div>
+
+## 5. Hyperparameter Tuning (HPT)
+
+Hyperparameter Tuning is based on [Optuna](https://optuna.org/). In this Python module the algorithm used to find the optimal set of hyperparameters is the Tree-Parzen Estimator. Ro keep it simple, the Tree-Parzen Estimator is based on the idea of Bayesian optimization, which involves iteratively sampling the hyperparameter space and updating a probabilistic model to guide the search towards promising regions of the space.
+
+To use Optuna for hyperparameter optimization, we first define the hyperparameter space and the objective function, and then create a study object. We then call the study's optimize method to begin the optimization process. The optimize method will repeatedly call the objective function with different hyperparameter configurations, using the sampler to generate the configurations and the pruner to decide whether to terminate a trial early. The optimize method will return the best hyperparameter configuration found by the optimization process.
+
+Note that one **study** refers to one run of HPT and that one study is composed of several **trials** where each trial corresponds to one specific set of hyperparameters.
+
+
+
+### 5.1. Run a HPT study
+
+First, modify the `hpt_config.yaml` file and define the different hyperparameters you would like to try. Note that all fields from the 3rd sections define grids. The other parameters are fixed for all trials.
+
+Run the following command to create an optuna HPT study.
+
+```bash
+python hpt.py --hpt-config-filepath hpt_config.yaml
+```
+
+The script will generate a `.db` file in `exp/hpt_studies`.  This file contains the information of our Hyperparameter Tuning.
+
+
+
+### 5.2. Visualize the HPT study
+
+To visualize the results of our HPT study, open the `hpt_visualizer.ipynb` notebook, fill the first cells accordingly and run all cells.
+
+The following figures are taken from the previously mentioned notebook for this HPT config file:
+
+```yaml
+study_name: "hpt_study-0"
+
+seed: 0
+image_augmentation: False  # due to https://github.com/keras-team/keras-cv/issues/581, image_augmentation must be 
+
+feature_extractor: "efficientnet"
+embedding_dim_grid: [128, 256, 512, 1024]
+intermediate_ff_block_units_grid: ["[]", "[256]", "[256, 256]", "[512]", "[512, 256]", "[512, 512]", "[1024]", "[1024, 512]"]  # must be a list of strings for Optuna compatibility
+
+epochs: 50
+early_stopping_patience: 3
+
+n_trials: 15
+```
+
+
+
+The complete HPT results are summarized in a table in the [Appendix](#6. Appendix) section.
+
+
+
+#### Best set of hyperparameters
+
+After 15 trials, the best configuration for our model is the following:
+
+```
+Best trial until now:
+ Value:  0.7195121049880981
+ Params: 
+    dropout: 0.3
+    embedding_dim: 1024
+    intermediate_ff_block_units: [512, 256]
+```
+
+
+
+#### Optimization history
+
+![optimization_history](figs/hpt/optimization_history.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- We can see that the more trials, the better objective value in average. This is because our Bayesian Optimization draws a set of hyperparameters according to the previous trials. For instance, it learns which specific value of a given hyperparameter gives a good model and often picks it in consequence.
+
+
+
+#### Intermediate plot
+
+![intermediate_plot](figs/hpt/intermediate_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- We can see that most models stop learning before 35 epochs. Note that some trainings were pruned by *Optuna* as they were considered non-promising
+
+
+
+#### Slice plot
+
+![slice_plot](figs/hpt/slice_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- `dropout` seems to be optimal when close to $0.3$ 
+- `embedding_dim` is optimal for values close to $1024$. It might prove interesting to test higher values of the embedding dimensions in a further HPT study to see if we will improve the performance of our model or reach a plateau
+- `intermediate_ff_block_units` seems to be optimal for a 2-layer structure. It is interesting to notice that the performance is not strictly increasing with respect to the number of parameters as `[1024, 512]` performs worse in average than `[512, 256]`
+
+
+
+#### Parallel plot
+
+Another way to visualize the individual impact of each parameter is through a Parallel Coordinate plot. Note that the observations are exactly the same compared to the previous Slice Plot.
+
+![parallel_plot](figs/hpt/parallel_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+
+
+#### Contour plot
+
+Let's analyze the relationship between the embedding dimension and the dropout value.
+
+![contour_plot](figs/hpt/contour_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- The space region with the best interpolated objective value is where `embedding_dim` is close to $1024$ and `dropout` is close to $0.2$
+
+
+
+#### Hyperparameter importances
+
+![hparam_importance](figs/hpt/hparam_importance.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- `dropout` is the most important hyperparameter. Using the previous slice plot, we can hypothesize that a too strong value of dropout can prevent the model to correctly learn
+- `intermediate_ff_block_units` is more important than `embedding_dim`. We can then assume that depth is a significant parameter for our model
+
+
+
+#### Duration importance for hyperparameters
+
+![duration_importance](figs/hpt/duration_importance.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- `intermediate_ff_block_units` is the hyperparameter with the most significant impact of duration. This was expected adding these blocks add a lot of parameters for our model to learn during each training
+
+
+
+<div style="page-break-after: always;"></div>
+
+## 6. Tensorflow Projector
+
+[Tensorflow Projector](https://projector.tensorflow.org) is a useful tool for data exploration and visualization, particularly for high-dimensional data. It can help gain insights into their data and identify trends and patterns that may not be apparent in lower-dimensional projections. Therefore, we will use Tensorflow Projector to visualize a 3D representation of our embeddings. If the model is trained correctly, then similar images should be close to each other.
 
 [insert different screenshots]
+
+
+
+<div style="page-break-after: always;"></div>
+
+## 7. Conclusion
+
+#TOFILL: ...
+
+<div style="page-break-after: always;"></div>
+
+## 8. Appendix
+
+|      |  loss | dropout | embedding_dim | intermediate_ff_block_units |
+| ---: | ----: | ------: | ------------: | :-------------------------- |
+|    0 |  0.82 |     0.6 |           512 | [256, 256]                  |
+|    1 | 0.946 |     0.9 |           512 | [256]                       |
+|    2 | 0.858 |     0.8 |           256 | []                          |
+|    3 | 0.729 |     0.3 |           512 | [256, 256]                  |
+|    4 | 0.857 |     0.9 |           256 | []                          |
+|    5 | 0.725 |     0.3 |           512 | [1024, 512]                 |
+|    6 | 0.736 |       0 |           512 | [512, 512]                  |
+|    7 | 0.748 |     0.2 |           128 | [512]                       |
+|    8 | 0.924 |     0.7 |          1024 | [512]                       |
+|    9 | 0.918 |       0 |           128 | []                          |
+|   10 | 0.727 |     0.4 |          1024 | [1024, 512]                 |
+|   11 | 0.741 |     0.4 |          1024 | [1024, 512]                 |
+|   12 | 0.899 |     0.5 |          1024 | [1024, 512]                 |
+|   13 |  0.72 |     0.3 |          1024 | [512, 256]                  |
+|   14 | 0.728 |     0.2 |           512 | [512, 256]                  |
+
+
+

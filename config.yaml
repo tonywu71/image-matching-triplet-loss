@@ -1,9 +1,12 @@
-experiment_name: "efficientnet_with_image_augmentation"
+experiment_name: "efficientnet_with_ff_block"
 
 seed: 0  # for train / validation split
 image_augmentation: False  # due to https://github.com/keras-team/keras-cv/issues/581, image_augmentation must be set to False
 
 feature_extractor: "efficientnet"
+embedding_dim: 128
+intermediate_ff_block_units: [512, 256]
 dropout: 0.5
+
 epochs: 50
 early_stopping_patience: 10

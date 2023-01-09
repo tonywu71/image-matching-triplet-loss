@@ -7,7 +7,7 @@ from models.projector import save_embeddings_and_metadata, generate_sprite
 from utils.helper import load_config
 
 
-from train import DATA_DIRPATH, BATCH_SIZE, IMAGE_SIZE_DATASET, VALIDATION_SPLIT
+from train import DATA_DIRPATH, BATCH_SIZE, IMAGE_SIZE_DATASET, VAL_SPLIT
 
  
 def main(config_filepath: str=typer.Option(...),
@@ -31,7 +31,7 @@ def main(config_filepath: str=typer.Option(...),
         image_size=IMAGE_SIZE_DATASET,
         shuffle=True,
         seed=config["seed"],
-        validation_split=VALIDATION_SPLIT
+        val_split=VAL_SPLIT
     )
     
     ds_val_raw = data_generator.val_raw.shuffle(buffer_size=n_examples).take(n_examples)

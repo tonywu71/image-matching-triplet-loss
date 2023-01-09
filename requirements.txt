@@ -1,14 +1,14 @@
 # python 3.10.8
-ipykernel
-pyyaml
-typer[all]
-tqdm
-numpy
-pandas
-matplotlib
-seaborn
-tensorflow
-tensorflow-addons
-tensorflow-datasets
-tensorflow-hub
-optuna
+ipykernel==6.19.4
+pyyamlPyYAML==6.0
+typer[all]==0.7.0
+tqdm==4.64.1
+numpy==1.23.5
+pandas==1.5.2
+matplotlib==3.6.2
+seaborn==0.12.1
+tensorflow==2.10.0
+tensorflow-addons==0.19.0
+tensorflow-datasets==4.7.0
+tensorflow-hub==0.12.0
+optuna==3.0.5
