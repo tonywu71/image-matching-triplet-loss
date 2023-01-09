@@ -53,7 +53,7 @@ class DataGenerator():
                  test_split: float=0.1
                  ) -> None:
         
-        assert Path(directory).is_dir(), f"`{self.directory}` is not a directory."
+        assert Path(directory).is_dir(), f"`{directory}` is not a directory."
         
         
         # --- Storing basic attributes ---

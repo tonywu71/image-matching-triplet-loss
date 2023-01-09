@@ -33,6 +33,7 @@ def main(hpt_config_filepath: str=typer.Option(...),
         resume (Optional[str], optional): Set flag to resume the previous study.
     """
     
+    print("\n\n----------------------------------------------------------------------------------\n\n")
     
     # --- Load HPT config ---
     hpt_config = load_hpt_config(hpt_config_filepath)
