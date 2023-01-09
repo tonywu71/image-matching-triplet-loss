@@ -9,7 +9,7 @@ from optuna.integration.tfkeras import TFKerasPruningCallback
 from dataloader.data_generator import DataGenerator
 from models.feature_model import load_and_compile_model
 from models.hpt.hpt_utils import create_args_from_hpt_config
-from train import DATA_DIRPATH, BATCH_SIZE, IMAGE_SIZE_DATASET, VALIDATION_SPLIT
+from train import DATA_DIRPATH, BATCH_SIZE, IMAGE_SIZE_DATASET, VAL_SPLIT, TEST_SPLIT
 
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,8 @@ def get_objective(trial: optuna.trial.Trial, hpt_config: dict) -> float:
         image_size=IMAGE_SIZE_DATASET,
         shuffle=True,
         seed=model_config["seed"],
-        validation_split=VALIDATION_SPLIT
+        val_split=VAL_SPLIT,
+        test_split=TEST_SPLIT
     )
     
     

@@ -8,7 +8,8 @@ def test_DataGenerator():
             image_size=(64, 64),
             shuffle=True,
             seed=0,
-            validation_split=0.2
+            val_split=0.2,
+            test_split=0.1
         )
     except:
         raise

@@ -10,7 +10,8 @@ CONFIG_FILEPATH = "tests/models/config_test.yaml"
 DATA_DIRPATH = "tiny-imagenet-200/train/"
 BATCH_SIZE = 256
 IMAGE_SIZE = (64, 64)
-VALIDATION_SPLIT = 0.2
+VAL_SPLIT = 0.2
+TEST_SPLIT = 0.1
 
 
 def test_trainer():
@@ -22,7 +23,8 @@ def test_trainer():
         image_size=IMAGE_SIZE,
         shuffle=True,
         seed=0,
-        validation_split=VALIDATION_SPLIT
+        val_split=VAL_SPLIT,
+        test_split=TEST_SPLIT
     )
     
     # Tackle long training by keeping only 1 batch of data
@@ -30,7 +32,7 @@ def test_trainer():
     data_generator.val = data_generator.val.take(1)
     
     try:
-        model_dirpath = train(CONFIG_FILEPATH, data_generator=data_generator)
+        model_dirpath = train(config, data_generator=data_generator)
         assert model_dirpath.exists()
         
     except:

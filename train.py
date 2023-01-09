@@ -14,7 +14,8 @@ from utils.helper import load_config
 DATA_DIRPATH = "tiny-imagenet-200/train/"
 BATCH_SIZE = 256
 IMAGE_SIZE_DATASET = (64, 64)
-VALIDATION_SPLIT = 0.2
+VAL_SPLIT = 0.2
+TEST_SPLIT = 0.1
 
  
 def main(config_filepath: str=typer.Option(...),
@@ -41,7 +42,8 @@ def main(config_filepath: str=typer.Option(...),
         image_size=IMAGE_SIZE_DATASET,
         shuffle=True,
         seed=config["seed"],
-        validation_split=VALIDATION_SPLIT
+        val_split=VAL_SPLIT,
+        test_split=TEST_SPLIT
     )
     
     # --- Training ---
