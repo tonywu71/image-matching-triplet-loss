@@ -6,7 +6,7 @@ import tensorflow as tf
 from dataloader.utils import plot_classes, plot_from_one_class
 from models.feature_model import IMAGE_SIZE_EFFICIENTNET
 
-BUFFER_SIZE = 1000
+BUFFER_SIZE = 20
 
 logger = logging.getLogger(__name__)
 
