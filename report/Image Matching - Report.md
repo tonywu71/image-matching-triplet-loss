@@ -18,6 +18,8 @@ Candidate number: K5013
 
 ## 1. Introduction
 
+### 1.1. Goal of the study
+
 We want to create a model for the task of image matching data from the [Tiny ImageNet Visual Recognition Challenge dataset](https://paperswithcode.com/dataset/tiny-imagenet).
 
 Image matching is a process in machine learning that involves finding similar images in a dataset. Image matching can be used for a variety of applications, such as image retrieval, object recognition, and duplication detection.
@@ -32,6 +34,12 @@ There are several approaches to image matching in machine learning, including:
 We will implement a distance-based matching model based on the ??? Paper which introduced a state-of-the-art technique in ???2019.
 
 
+
+### 1.2. Code repository
+
+Particular care has been taken in making the code clean, efficient and modular.
+
+TOFILL: ...
 
 <div style="page-break-after: always;"></div>
 

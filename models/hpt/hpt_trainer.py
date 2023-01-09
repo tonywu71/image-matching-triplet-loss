@@ -38,9 +38,9 @@ def hpt_train(model: tf.keras.Model,
     callbacks.append(TFKerasPruningCallback(trial, "val_loss"))
     
     # --- Train the model ---
-    history = model.fit(ds_train.take(2),
+    history = model.fit(ds_train,
                         epochs=config["epochs"],
-                        validation_data=ds_val.take(2),
+                        validation_data=ds_val,
                         callbacks=callbacks)
     
     return history
@@ -57,7 +57,7 @@ def get_objective(trial: optuna.trial.Trial, hpt_config: dict) -> float:
     # --- Model-related hyperparameters ---
     embedding_dim = trial.suggest_categorical("embedding_dim", hpt_config["embedding_dim_grid"])
     intermediate_ff_block_units = trial.suggest_categorical("intermediate_ff_block_units", hpt_config["intermediate_ff_block_units_grid"])
-    dropout = trial.suggest_categorical("dropout", hpt_config["dropout_grid"])
+    dropout = trial.suggest_float("dropout", low=0., high=1., step=0.1)
     
     logger.info("Successfully picked hyperparameters.")
     

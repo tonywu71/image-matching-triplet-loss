@@ -23,7 +23,7 @@ def get_feature_extractor(model_name: str) -> tf.keras.Model:
 
 
 def load_and_compile_model(model_name: str,
-                           embedding_dim: int=256,
+                           embedding_dim: int,
                            intermediate_ff_block_units: Optional[Union[int, List[int]]]=None,
                            dropout: float=0.,
                            image_augmentation: bool=False) -> tf.keras.Model:
@@ -58,11 +58,11 @@ def load_and_compile_model(model_name: str,
         tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=1)) # L2 normalize embeddings for triplet loss
     ])
     
-    model_name = tf.keras.Sequential(list_layers, name="feature_model")
+    model = tf.keras.Sequential(list_layers, name="feature_model")
 
-    model_name.compile(
+    model.compile(
         optimizer=tf.keras.optimizers.Adam(),
         loss=tfa.losses.TripletSemiHardLoss()
     )
     
-    return model_name
+    return model
