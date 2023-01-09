@@ -8,6 +8,14 @@ Candidate number: K5013
 
 <div style="page-break-after: always;"></div>
 
+## TODO
+
+- [ ] Train from HPT result
+- [ ] Run E2E and jot down the final AUC
+- [ ] Run Tensorflow Projector
+
+
+
 ## 1. Introduction
 
 ### 1.1. Goal of the study
@@ -23,7 +31,7 @@ There are several approaches to image matching in machine learning, including:
 3. Hash-based matching: In this approach, images are represented as hashes, which are compact, fixed-length representations of the images. Matching is performed by comparing the hashes of the images.
 4. Deep learning-based matching: In this approach, images are fed into a convolutional neural network (CNN) trained to recognize patterns in the images. Matching is performed based on the output of the CNN.
 
-We will implement a distance-based matching model based on the ??? Paper which introduced a state-of-the-art technique in ???2019.
+We will implement a distance-based matching model based on *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015* which introduced a state-of-the-art technique in face matching. Note that we will make the extra assumption that this technique can generalize to generic image matching.
 
 
 
@@ -31,7 +39,23 @@ We will implement a distance-based matching model based on the ??? Paper which i
 
 Particular care has been taken in making the code clean, efficient and modular.
 
-TOFILL: ...
+#### 1.2.1. Main files
+
+- `hpt.py` is used to perform Hyperparameter Tuning (HPT)
+- `train.py` is used to train a Feature Model (cf [Section 3.4](3.4. Feature Model))
+- `test_e2e.ipynb` is used to create and evaluate an ImageMatcher model
+
+
+
+#### 1.2.2. Environment setup
+
+Create an environment with `python 3.10.8`  and run the following command to install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+
 
 <div style="page-break-after: always;"></div>
 
@@ -113,7 +137,9 @@ For our model, we can use a usual convolutional architecture like VGG-16, ResNet
 
 
 
-### 3.2. Loss
+### 3.2. Triplet Loss
+
+For the best performance, let's implement the Triplet Loss introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*.
 
 **Goal:** We want to ensure that an image $x_i^a$ (*anchor*) of a specific class is closer to all other images  $x_i^p$ (*positive*) of the same person than it is to any image  $x_i^n$ (*negative*) of any other person.
 
@@ -261,7 +287,7 @@ Finally, we need to project our vectors to a vector space with the given embeddi
 $$
 \forall x \in \mathbb{R}^d,  \ \|f(x)\|_2=1
 $$
- 
+
 
 Thus, we will implement the final layers of our feature model as such:
 
@@ -296,7 +322,13 @@ graph LR
 
 
 
-### 3.5. Metrics
+### 3.5. ImageMatcher (E2E model)
+
+#TOFILL: ...
+
+
+
+### 3.6. Metrics
 
 The main metric we will use is the ROC AUC which stands for Receiver Operating Characteristic's Area Under the Curve. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
 Moreover, plotting the ROC AUC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (e.g. for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
