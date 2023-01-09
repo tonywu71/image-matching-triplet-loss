@@ -19,7 +19,7 @@ def train(config: dict, data_generator: DataGenerator) -> Path:
     # --- Load the model ---
     model = load_and_compile_model(model_name=config["feature_extractor"],
                                    embedding_dim=config["embedding_dim"],
-                                   intermediate_linear_units=config["intermediate_linear_units"],
+                                   intermediate_ff_block_units=config["intermediate_ff_block_units"],
                                    dropout=config["dropout"],
                                    image_augmentation=config["image_augmentation"])
     

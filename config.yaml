@@ -5,7 +5,7 @@ image_augmentation: False  # due to https://github.com/keras-team/keras-cv/issue
 
 feature_extractor: "efficientnet"
 embedding_dim: 128
-intermediate_linear_units: [512, 256]
+intermediate_ff_block_units: [512, 256]
 dropout: 0.5
 
 epochs: 50

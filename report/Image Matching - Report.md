@@ -10,7 +10,7 @@ Candidate number: K5013
 
 ## TODO:
 
-- [ ] Rename `intermediate_linear_units` to `intermediate_ff_block_units``
+- [ ] ...
 
 
 
@@ -303,7 +303,7 @@ image_augmentation: False
 
 feature_extractor: "efficientnet"
 embedding_dim: 128
-intermediate_linear_units: [512, 256]
+intermediate_ff_block_units: [512, 256]
 dropout: 0.5
 
 epochs: 50

@@ -24,19 +24,19 @@ def get_feature_extractor(model_name: str) -> tf.keras.Model:
 
 def load_and_compile_model(model_name: str,
                            embedding_dim: int=256,
-                           intermediate_linear_units: Optional[Union[int, List[int]]]=None,
+                           intermediate_ff_block_units: Optional[Union[int, List[int]]]=None,
                            dropout: float=0.,
                            image_augmentation: bool=False) -> tf.keras.Model:
     
-    if intermediate_linear_units is None:
-        intermediate_linear_units = []
+    if intermediate_ff_block_units is None:
+        intermediate_ff_block_units = []
     else:
-        if type(intermediate_linear_units) is int:
-            intermediate_linear_units = [intermediate_linear_units] # convert to a list of 1 element
-        elif type(intermediate_linear_units) is list:
-            intermediate_linear_units = intermediate_linear_units
+        if type(intermediate_ff_block_units) is int:
+            intermediate_ff_block_units = [intermediate_ff_block_units] # convert to a list of 1 element
+        elif type(intermediate_ff_block_units) is list:
+            intermediate_ff_block_units = intermediate_ff_block_units
         else:
-            raise TypeError("`intermediate_linear_units` should be an integer or a list of integer.")
+            raise TypeError("`intermediate_ff_block_units` should be an integer or a list of integer.")
     
     feature_extractor = get_feature_extractor(model_name)
     
@@ -50,7 +50,7 @@ def load_and_compile_model(model_name: str,
         tf.keras.layers.Flatten()
     ])
     
-    for units in intermediate_linear_units:
+    for units in intermediate_ff_block_units:
         list_layers.append(FFBlock(units=units, dropout=dropout))
 
     list_layers.extend([

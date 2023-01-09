@@ -56,7 +56,7 @@ def get_objective(trial: optuna.trial.Trial, hpt_config: dict) -> float:
     
     # --- Model-related hyperparameters ---
     embedding_dim = trial.suggest_categorical("embedding_dim", hpt_config["embedding_dim_grid"])
-    intermediate_linear_units = trial.suggest_categorical("intermediate_linear_units", hpt_config["intermediate_linear_units_grid"])
+    intermediate_ff_block_units = trial.suggest_categorical("intermediate_ff_block_units", hpt_config["intermediate_ff_block_units_grid"])
     dropout = trial.suggest_categorical("dropout", hpt_config["dropout_grid"])
     
     logger.info("Successfully picked hyperparameters.")
@@ -73,7 +73,7 @@ def get_objective(trial: optuna.trial.Trial, hpt_config: dict) -> float:
     model_config = create_args_from_hpt_config(
         hpt_config=hpt_config,
         embedding_dim=embedding_dim,
-        intermediate_linear_units=intermediate_linear_units,
+        intermediate_ff_block_units=intermediate_ff_block_units,
         dropout=dropout
     )
     
@@ -97,7 +97,7 @@ def get_objective(trial: optuna.trial.Trial, hpt_config: dict) -> float:
     # --- Load the model ---
     model = load_and_compile_model(model_name=model_config["feature_extractor"],
                                    embedding_dim=model_config["embedding_dim"],
-                                   intermediate_linear_units=model_config["intermediate_linear_units"],
+                                   intermediate_ff_block_units=model_config["intermediate_ff_block_units"],
                                    dropout=model_config["dropout"],
                                    image_augmentation=model_config["image_augmentation"])
 

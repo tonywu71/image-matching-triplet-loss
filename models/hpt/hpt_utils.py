@@ -38,7 +38,7 @@ def create_args_from_hpt_config(hpt_config: dict, **trial_hparams) -> dict:
         
         "feature_extractor": hpt_config["feature_extractor"],
         "embedding_dim": trial_hparams["embedding_dim"],
-        "intermediate_linear_units": json.loads(trial_hparams["intermediate_linear_units"]),  # we had to use strings for Optuna compatibility
+        "intermediate_ff_block_units": json.loads(trial_hparams["intermediate_ff_block_units"]),  # we had to use strings for Optuna compatibility
         "dropout": trial_hparams["dropout"],
         
         "epochs": hpt_config["epochs"],
