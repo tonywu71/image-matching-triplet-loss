@@ -27,10 +27,12 @@ def main(config_filepath: str=typer.Option(...),
         resume_filepath (Optional[str], optional): Filepath for the previously trained model. Configs must match.
     """
     
+    print("\n\n----------------------------------------------------------------------------------\n\n")
+    
     if tf.config.list_physical_devices('GPU'):
         print(f"GPU(s) detected: {tf.config.list_physical_devices('GPU')}")
         
-    print("----------------------------------------------------------------------------------\n\n")
+    print("\n\n----------------------------------------------------------------------------------\n\n")
     
     # ---- Load config ---
     config = load_config(config_filepath)

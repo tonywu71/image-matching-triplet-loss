@@ -93,8 +93,8 @@ class DataGenerator():
         
         # --- Optimize pipeline ---
         self.train = self.train_unbatched.shuffle(buffer_size=BUFFER_SIZE).batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
-        self.val = self.val_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
-        self.test = self.test_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.val = self.val_unbatched.batch(self.batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+        self.test = self.test_unbatched.batch(self.batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
 
         logger.info(f"Successfully generated a DataGenerator object from `{directory}`")
         

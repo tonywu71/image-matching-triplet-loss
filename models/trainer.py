@@ -77,7 +77,7 @@ def resume_training(model_dirpath: str, config: dict, data_generator: DataGenera
             monitor="val_loss",
             mode="min",
             restore_best_weights=True),
-        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=5) # type: ignore
+        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=HISTOGRAM_FREQ) # type: ignore
     ]
     
     # --- Train the model ---
