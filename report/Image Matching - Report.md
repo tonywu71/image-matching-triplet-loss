@@ -6,14 +6,6 @@ Candidate number: K5013
 
 [TOC]
 
-
-
-## TODO:
-
-- [ ] ...
-
-
-
 <div style="page-break-after: always;"></div>
 
 ## 1. Introduction
@@ -65,7 +57,9 @@ We can see on the above-plotted histogram that all classes have a number of exam
 
 ### 2.3. Data split
 
-#TODO: Implement train/val/test split
+The test set is only used to evaluate our model and not used during the training.
+
+This guarantees 2 things that the model will not overfit on the test set. This could happen during the Hyperparameter Tuning or during the training because of the Early Stopping (cf [Section 4.2](4.2. Early Stopping)).
 
 
 
@@ -127,6 +121,8 @@ This is an example of valid triplet from our dataset:
 
 ![valid_triplet](figs/triplet_loss/valid_triplet.png)
 
+<p align = "center"> <b>Fig. ????</b></p>
+
 Mathematically speaking, we want:
 $$
 \forall\left(f\left(x_i^a\right), f\left(x_i^p\right), f\left(x_i^n\right)\right) \in \mathcal{T}, \ 
@@ -140,9 +136,9 @@ with:
 
 
 
-<img src="https://omoindrot.github.io/assets/triplet_loss/triplets.png" style="zoom:50%;" />
+![triplets](figs/triplet_loss/triplets.png)
 
-
+<p align = "center"> <b>Fig. ????</b></p>
 
 Hence, the triplet loss $L$ can be defined as the following function:
 $$
@@ -178,6 +174,8 @@ Note that there are two main approaches to transfer learning: feature-based and 
 Tensorflow Hub is a repository of trained machine learning models ready to use. We will use it to get our fixed feature extractor.
 
 <img src="https://www.tensorflow.org/static/site-assets/images/project-logos/tensorflow-hub-logo-social.png" style="zoom:20%;" />
+
+<p align = "center"> <b>Fig. ????</b></p>
 
 We tried [ResNet50](https://tfhub.dev/tensorflow/resnet_50/feature_vector/1) and [EfficientNet](https://tfhub.dev/google/collections/efficientnet/1) as our feature extractor. After many experiments, we observed that `EfficientNet` is both more performant and quicker to train. Hence, we will make our transfer learning from EfficientNet.
 
@@ -253,11 +251,19 @@ Dense --> BatchNorm --> ReLU --> Dropout
 end
 ```
 
+<p align = "center"> <b>Fig. ????</b></p>
+
+
+
 #### 3.4.3. Embedding and L2 normalization
 
-#TOFILL: Add reference to the FaceNet Paper
+Finally, we need to project our vectors to a vector space with the given embedding dimension. According to the *FaceNet* paper, we also want constrain this embedding to live on the d-dimensional hypersphere *i.e.*:
+$$
+\forall x \in \mathbb{R}^d,  \ \|f(x)\|_2=1
+$$
+ 
 
-
+Thus, we will implement the final layers of our feature model as such:
 
 ```python
     list_layers.extend([
@@ -266,7 +272,9 @@ end
     ])
 ```
 
-However, note that there is a tradeoff for the number of units / embedding dimension of the final dense layer:
+
+
+Note that there is a tradeoff for the number of units / embedding dimension of the final dense layer:
 
 - On the one hand, the higher the embedding dimension and the more information the model will be able to encode
 - On the other hand, if we choose an embedding space of high dimensions, the L2 distance between two points will tend to increase as the number of dimensions increases. This phenomenon is known as the "curse of dimensionality."
@@ -283,6 +291,8 @@ graph LR
     A(Feature Extractor) --> B1(Feed-Forward Block #1) --> B2(Feed-Forward Block #2) --> B_others(...) -->BN(Feed-Forward Block #N) --> C(Embedding) --> D(L2 Normalization)
   end
 ```
+
+<p align = "center"> <b>Fig. ????</b></p>
 
 
 
@@ -320,9 +330,7 @@ early_stopping_patience: 10
 
 
 
-### 4.?. Early Stopping
-
-#TOFILL
+### 4.2. Early Stopping
 
 Early Stopping is motivated by 2 reasons:
 
@@ -330,6 +338,10 @@ Early Stopping is motivated by 2 reasons:
 - We want the Hyperparameter Tuning to be as fast as possible
 
 
+
+### 4.3. Tensorboard
+
+TOFILL: ...
 
 <div style="page-break-after: always;"></div>
 
@@ -343,18 +355,14 @@ Note that one **study** refers to one run of HPT and that one study is composed 
 
 
 
-The validation set is obtained from the original full test set.
-
-
-
 ### 5.1. Run a HPT study
 
 First, modify the `hpt_config.yaml` file and define the different hyperparameters you would like to try. Note that all fields from the 3rd sections define grids. The other parameters are fixed for all trials.
 
 Run the following command to create an optuna HPT study.
 
-```python
-python hpt.py #TOFILL
+```bash
+python hpt.py --hpt-config-filepath hpt_config.yaml
 ```
 
 The script will generate a `.db` file in `exp/hpt_studies`.  This file contains the information of our Hyperparameter Tuning.
@@ -368,7 +376,19 @@ To visualize the results of our HPT study, open the `hpt_visualizer.ipynb` noteb
 The following figures are taken from the previously mentioned notebook for this HPT config file:
 
 ```yaml
-#TOFILL
+study_name: "hpt_study-0"
+
+seed: 0
+image_augmentation: False  # due to https://github.com/keras-team/keras-cv/issues/581, image_augmentation must be 
+
+feature_extractor: "efficientnet"
+embedding_dim_grid: [128, 256, 512, 1024]
+intermediate_ff_block_units_grid: ["[]", "[256]", "[256, 256]", "[512]", "[512, 256]", "[512, 512]", "[1024]", "[1024, 512]"]  # must be a list of strings for Optuna compatibility
+
+epochs: 50
+early_stopping_patience: 3
+
+n_trials: 15
 ```
 
 
@@ -379,77 +399,103 @@ The complete HPT results are summarized in a table in the [Appendix](#6. Appendi
 
 #### Best set of hyperparameters
 
-After 50 trials, the best configuration for our model is the following:
+After 15 trials, the best configuration for our model is the following:
 
 ```
-#TOFILL
+Best trial until now:
+ Value:  0.7195121049880981
+ Params: 
+    dropout: 0.3
+    embedding_dim: 1024
+    intermediate_ff_block_units: [512, 256]
 ```
 
 
 
-#### Optimization History
+#### Optimization history
 
-#INSERT_IMG
+![optimization_history](figs/hpt/optimization_history.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
 
 **Observations:**
 
-- We can see that the more trials, the better objective value in general. This is because our Bayesian Optimization draws a set of hyperparameters according to the previous trials. For instance, it learns which specific value of a given hyperparameter gives a good model and often picks it in consequence.
+- We can see that the more trials, the better objective value in average. This is because our Bayesian Optimization draws a set of hyperparameters according to the previous trials. For instance, it learns which specific value of a given hyperparameter gives a good model and often picks it in consequence.
+
+
+
+#### Intermediate plot
+
+![intermediate_plot](figs/hpt/intermediate_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- We can see that most models stop learning before 35 epochs. Note that some trainings were pruned by *Optuna* as they were considered non-promising
 
 
 
 #### Slice plot
 
-#INSERT_IMG
+![slice_plot](figs/hpt/slice_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
 
 **Observations:**
 
-- `batch_size` is optimal for a value of `32`. This is because the greater the batch size, the more accurate each gradient descent iteration is
-- `clip_grad_norm` is optimal when set to `true`. The reason why is that backpropagation-through-time often leads to vanishing or exploding gradients with LSTM layers (cf [subsection 3.1.1](###3.1.1. Exercise - regularization) on regularization)
-- `dropout` is optional for low values. We can guess that the model is not very likely to overfit, hence a strong dropout will only slow down the training without brining much to the table
-- `lr` (learning rate) and `lr_scheduler` are constant here
-- `model_dims` and `num_layers` being deeply related (as they both impact the LSTM layer), we will analyze them separately in the following plot
-- `optimizer` is optional with Adam
+- `dropout` seems to be optimal when close to $0.3$ 
+- `embedding_dim` is optimal for values close to $1024$. It might prove interesting to test higher values of the embedding dimensions in a further HPT study to see if we will improve the performance of our model or reach a plateau
+- `intermediate_ff_block_units` seems to be optimal for a 2-layer structure. It is interesting to notice that the performance is not strictly increasing with respect to the number of parameters as `[1024, 512]` performs worse in average than `[512, 256]`
 
 
 
-#### Parallel Coordinate
+#### Parallel plot
 
 Another way to visualize the individual impact of each parameter is through a Parallel Coordinate plot. Note that the observations are exactly the same compared to the previous Slice Plot.
 
-#INSERT_IMG
+![parallel_plot](figs/hpt/parallel_plot.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
 
 
 
 #### Contour plot
 
-Let's analyze the relationship between model width and depth.
+Let's analyze the relationship between the embedding dimension and the dropout value.
 
-#INSERT_IMG
+![contour_plot](figs/hpt/contour_plot.png)
 
-**Observations:**
-
-- Surprisingly enough, models with a high number of parameters (high `model_dims` and `num_layers`) give poor results. Thus, there is a tradeoff between width and depth
-- Contrarily to what the instructions said with *it is sometimes observed that having a wider LSTM layer is more beneficial than having deeper stacked LSTM layers*, it appears that the opposite holds true for our model
-
-
-
-#### Hyperparameter Importances
-
-#INSERT_IMG
+<p align = "center"> <b>Fig. ????</b></p>
 
 **Observations:**
 
-- `optimizer` is undoubtedly the most important hyperparameter. This can be easily explained by looking at the Slice Plot: all trials with `sgd` have a drastically worse validation loss that the ones with `adam`
+- The space region with the best interpolated objective value is where `embedding_dim` is close to $1024$ and `dropout` is close to $0.2$
 
 
 
-#### Duration Importance for Hyperparameters
+#### Hyperparameter importances
 
-#INSERT_IMG
+![hparam_importance](figs/hpt/hparam_importance.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
 
 **Observations:**
 
-- `model_dims` - i.e. the number of units per LSTM layer - is the hyperparameter with the most significant impact of duration. This is because not only the greater `model_dims` the more parameters in our model but also because the computation time is proportional to the sequence length (which is not the case of the Feed-Forward layer)
+- `dropout` is the most important hyperparameter. Using the previous slice plot, we can hypothesize that a too strong value of dropout can prevent the model to correctly learn
+- `intermediate_ff_block_units` is more important than `embedding_dim`. We can then assume that depth is a significant parameter for our model
+
+
+
+#### Duration importance for hyperparameters
+
+![duration_importance](figs/hpt/duration_importance.png)
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+**Observations:**
+
+- `intermediate_ff_block_units` is the hyperparameter with the most significant impact of duration. This was expected adding these blocks add a lot of parameters for our model to learn during each training
 
 
 
@@ -467,11 +513,29 @@ Let's analyze the relationship between model width and depth.
 
 ## 7. Conclusion
 
-
+#TOFILL: ...
 
 <div style="page-break-after: always;"></div>
 
 ## 8. Appendix
+
+|      |  loss | dropout | embedding_dim | intermediate_ff_block_units |
+| ---: | ----: | ------: | ------------: | :-------------------------- |
+|    0 |  0.82 |     0.6 |           512 | [256, 256]                  |
+|    1 | 0.946 |     0.9 |           512 | [256]                       |
+|    2 | 0.858 |     0.8 |           256 | []                          |
+|    3 | 0.729 |     0.3 |           512 | [256, 256]                  |
+|    4 | 0.857 |     0.9 |           256 | []                          |
+|    5 | 0.725 |     0.3 |           512 | [1024, 512]                 |
+|    6 | 0.736 |       0 |           512 | [512, 512]                  |
+|    7 | 0.748 |     0.2 |           128 | [512]                       |
+|    8 | 0.924 |     0.7 |          1024 | [512]                       |
+|    9 | 0.918 |       0 |           128 | []                          |
+|   10 | 0.727 |     0.4 |          1024 | [1024, 512]                 |
+|   11 | 0.741 |     0.4 |          1024 | [1024, 512]                 |
+|   12 | 0.899 |     0.5 |          1024 | [1024, 512]                 |
+|   13 |  0.72 |     0.3 |          1024 | [512, 256]                  |
+|   14 | 0.728 |     0.2 |           512 | [512, 256]                  |
 
 
 
