@@ -83,7 +83,7 @@ We can see on the above-plotted histogram that all classes have a number of exam
 
 The test set is only used to evaluate our model and not used during the training.
 
-This guarantees 2 things that the model will not overfit on the test set. This could happen during the Hyperparameter Tuning or during the training because of the Early Stopping (cf [Section 4.2](4.2. Early Stopping)).
+This guarantees 2 things that the model will not overfit on the test set. This could happen during the Hyperparameter Tuning or during the training because of the Early Stopping (cf [Section 4.3](###4.3. Early Stopping)).
 
 
 
@@ -231,6 +231,8 @@ def get_feature_extractor(model_name: str) -> tf.keras.Model:
 
 The feature model obtained from TfHub returns a 3D tensor because of its convolutional nature. To process it any further, we will first use a `tf.keras.layers.Flatten`  layer to map it to a 2D tensor.
 
+
+
 #### 3.4.2. Feed-Forward Blocks
 
 Next, we will add some intermediate feed-forward blocks to increase the depth of our network and hopefully get better performance. A feed-forward block is a custom layer defined by the following class in `models/ff_block.py`:
@@ -313,9 +315,15 @@ It is hard to assess which value of `embedding_dim` provides the best performanc
 
 ```mermaid
 graph LR
-  subgraph Feature Model
+  subgraph FeatureModel
+  	direction LR
     A(Feature Extractor) --> B1(Feed-Forward Block #1) --> B2(Feed-Forward Block #2) --> B_others(...) -->BN(Feed-Forward Block #N) --> C(Embedding) --> D(L2 Normalization)
   end
+
+input[(Input image)] -.-> FeatureModel -.-> output[(Output vector)]
+
+classDef data fill:#327da8;
+class input,output data;
 ```
 
 <p align = "center"> <b>Fig. ????</b></p>
@@ -324,22 +332,102 @@ graph LR
 
 ### 3.5. ImageMatcher (E2E model)
 
-#TOFILL: ...
+As previously mentioned at the end of [Section 3.3](3.3. Online TripletLoss), it is necessary to build a Siamese Network to implement our end-to-end model.
+
+```mermaid
+graph LR
+
+subgraph E2E Model
+    input1[(Image 1)]
+    input2[(Image 2)]
+    FeatureModel1(Feature Model)
+    FeatureModel2(Feature Model)
+    output1[(Vector 1)]
+    output2[(Vector 2)]
+    Diff{"-"}
+    Norm{"||.|| in L2"}
+
+
+    input1 -.-> FeatureModel1 -.-> output1
+    input2 -.-> FeatureModel2 -.-> output2
+    output1 & output2 -.-> Diff -.-> Norm
+    Norm -- > threshold --> res1(Images match)
+    Norm -- < threshold --> res2(Images don't match)
+
+    classDef data fill:#327da8;
+    class input1,input2,output1,output2 data;
+
+    classDef model fill:#e89b35;
+    class FeatureModel1,FeatureModel2,Diff,Norm model;
+end
+```
+
+To create a E2E model, just create an instance of `ImageMatcher` with the previously trained Feature Model as its input. The following snippet of code goes into more details about how the Image Matcher was build with respect to the above graph.
+
+```python
+class ImageMatcher():
+    def _create_e2e_model(self, feature_model: tf.keras.Model) -> tf.keras.Model:
+        inputs = tf.keras.Input(shape=(2, *IMAGE_SIZE_EFFICIENTNET, 3))
+        
+        x_1 = feature_model(inputs[:, 0])  # type: ignore
+        x_2 = feature_model(inputs[:, 1])  # type: ignore
+        
+        outputs = tf.keras.layers.Lambda(lambda x: - tf.norm(x[0] - x[1], ord='euclidean', axis=-1))([x_1, x_2])
+        
+        model = tf.keras.Model(inputs=inputs, outputs=outputs, name="image_matching")
+
+        return model
+        
+    
+    def __init__(self, model_filepath: str) -> None:
+        self.feature_model = tf.keras.models.load_model(model_filepath, compile=False)
+        self.model = self._create_e2e_model(feature_model=self.feature_model)  # type: ignore
+        
+        self.model.compile(metrics=[tf.keras.metrics.AUC(from_logits=True)])
+        
+        logger.info("Successfully created E2E model.")
+    
+    
+    def __call__(self, dataset: tf.data.Dataset) -> tf.Tensor:
+        return self.model(dataset)  # type: ignore
+    
+    
+    def get_auc(self, dataset: tf.data.Dataset, steps: Optional[int]=None) -> float:
+        _, auc = self.model.evaluate(dataset, steps=steps) # first element is the undefined loss
+        return auc
+    
+    
+    def predict(self, im_1, im_2) -> float:
+        """Given two images, perform image pre-processing and returns the probability that
+        these 2 images are similar.
+
+        Returns:
+            float
+        """
+        im_1 = preprocess_inputs(im_1)
+        im_2 = preprocess_inputs(im_2)
+        
+        inputs = tf.stack([im_1, im_2], axis=0)
+        
+        inputs = tf.expand_dims(inputs, axis=0)
+        
+        return self.model(inputs)   # type: ignore
+```
 
 
 
 ### 3.6. Metrics
 
 The main metric we will use is the ROC AUC which stands for Receiver Operating Characteristic's Area Under the Curve. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
-Moreover, plotting the ROC AUC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (e.g. for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
+Moreover, plotting the ROC AUC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (*e.g.* for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
 
-If we set a threshold, then we can also consider the confusion matrix as a second metric.
+Note that if a threshold is defined, then we will be able to consider the confusion matrix as a second metric.
 
 
 
 <div style="page-break-after: always;"></div>
 
-## 4. Model Training
+## 4. Training procedure
 
 ### 4.1. Model configs
 
@@ -362,7 +450,18 @@ early_stopping_patience: 10
 
 
 
-### 4.2. Early Stopping
+### 4.2. Optimizer
+
+We will use the Adam optimizer (Adaptive Moment Estimation) as it is computationally efficient, easy to implement and known to perform well for many deep learning problems.
+
+In particular, Adam is well-suited to our study case as it features:
+
+- Adaptive learning rate: Adam uses separate learning rates for each parameter, and adapts the learning rate during training by using the first and second moments of the gradients. This helps the optimizer converge faster and more stably
+- Momentum: Adam also utilizes moving average of the gradient called momentum which helps to smooth out the gradients and reduce oscillations in the optimizer's path.
+
+
+
+### 4.3. Early Stopping
 
 Early Stopping is motivated by 2 reasons:
 
@@ -370,10 +469,6 @@ Early Stopping is motivated by 2 reasons:
 - We want the Hyperparameter Tuning to be as fast as possible
 
 
-
-### 4.3. Tensorboard
-
-TOFILL: ...
 
 <div style="page-break-after: always;"></div>
 
@@ -401,7 +496,24 @@ The script will generate a `.db` file in `exp/hpt_studies`.  This file contains 
 
 
 
-### 5.2. Visualize the HPT study
+### 5.2. HPT results
+
+After 15 trials, the best configuration for our model is the following:
+
+```
+Best trial until now:
+ Value:  0.7195121049880981
+ Params: 
+    dropout: 0.3
+    embedding_dim: 1024
+    intermediate_ff_block_units: [512, 256]
+```
+
+The complete HPT results for each trial are summarized in the table in the [Appendix](#6. Appendix) section.
+
+
+
+### 5.3. Visualize the HPT study
 
 To visualize the results of our HPT study, open the `hpt_visualizer.ipynb` notebook, fill the first cells accordingly and run all cells.
 
@@ -425,26 +537,7 @@ n_trials: 15
 
 
 
-The complete HPT results are summarized in a table in the [Appendix](#6. Appendix) section.
-
-
-
-#### Best set of hyperparameters
-
-After 15 trials, the best configuration for our model is the following:
-
-```
-Best trial until now:
- Value:  0.7195121049880981
- Params: 
-    dropout: 0.3
-    embedding_dim: 1024
-    intermediate_ff_block_units: [512, 256]
-```
-
-
-
-#### Optimization history
+#### 5.3.1. Optimization history
 
 ![optimization_history](figs/hpt/optimization_history.png)
 
@@ -456,7 +549,7 @@ Best trial until now:
 
 
 
-#### Intermediate plot
+#### 5.3.2. Intermediate plot
 
 ![intermediate_plot](figs/hpt/intermediate_plot.png)
 
@@ -468,7 +561,7 @@ Best trial until now:
 
 
 
-#### Slice plot
+#### 5.3.3. Slice plot
 
 ![slice_plot](figs/hpt/slice_plot.png)
 
@@ -482,7 +575,7 @@ Best trial until now:
 
 
 
-#### Parallel plot
+#### 5.3.4. Parallel plot
 
 Another way to visualize the individual impact of each parameter is through a Parallel Coordinate plot. Note that the observations are exactly the same compared to the previous Slice Plot.
 
@@ -492,7 +585,7 @@ Another way to visualize the individual impact of each parameter is through a Pa
 
 
 
-#### Contour plot
+#### 5.3.5. Contour plot
 
 Let's analyze the relationship between the embedding dimension and the dropout value.
 
@@ -506,7 +599,7 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 
 
-#### Hyperparameter importances
+#### 5.3.6. Hyperparameter importances
 
 ![hparam_importance](figs/hpt/hparam_importance.png)
 
@@ -519,7 +612,7 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 
 
-#### Duration importance for hyperparameters
+#### 5.3.7. Duration importance for hyperparameters
 
 ![duration_importance](figs/hpt/duration_importance.png)
 
@@ -533,6 +626,47 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 <div style="page-break-after: always;"></div>
 
+## 6. FeatureModel training results
+
+### 6.1. Learning curve
+
+We trained our model on Amazon SageMaker Lab with a GPU until we the validation loss wouldn't decrease anymore. In total, the training lasted 4 hours.
+
+<img src="figs/training/learning_curve.png" alt="learning_curve" style="zoom: 67%;" />
+
+<p align = "center"> <b>Fig. ????</b></p>
+
+
+We can observe that the validation loss stops to decrease after roughly 100 epochs.
+
+
+
+### 6.2. Tensorboard
+
+TensorBoard is a web-based tool provided with TensorFlow that allows users to interactively visualize and explore TensorFlow runs and experiments. It can help you understand and debug your TensorFlow code, and it can also be used for monitoring performance and evaluating results.
+
+It can be run by running the following code:
+
+```bash
+tensorboard --logdir logs/<model_experiment>
+```
+
+For instance, run the following to visualize the result of our Feature Model:
+
+```bash
+tensorboard --logdir logs/efficientnet_ffblocks_2_emb_1024
+```
+
+
+
+
+
+## 7. ImageMatcher results (E2E)
+
+#TOFILL: ...
+
+
+
 ## 6. Tensorflow Projector
 
 [Tensorflow Projector](https://projector.tensorflow.org) is a useful tool for data exploration and visualization, particularly for high-dimensional data. It can help gain insights into their data and identify trends and patterns that may not be apparent in lower-dimensional projections. Therefore, we will use Tensorflow Projector to visualize a 3D representation of our embeddings. If the model is trained correctly, then similar images should be close to each other.
@@ -545,7 +679,9 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 ## 7. Conclusion
 
-#TOFILL: ...
+We have implemented an end-to-end machine learning model that is able to tell if two images are similar. This model has various applications, such as image retrieval, object recognition, and duplication detection. The project we designed is all the more interesting that the whole training process is data-agnostic *i.e.* the Image Matcher can be easily retrained for another dataset.
+
+
 
 <div style="page-break-after: always;"></div>
 

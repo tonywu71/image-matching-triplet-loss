@@ -8,5 +8,5 @@ embedding_dim: 1024
 intermediate_ff_block_units: [512, 256]
 dropout: 0.3
 
-epochs: 100
+epochs: 120
 early_stopping_patience: 5
