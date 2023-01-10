@@ -8,14 +8,6 @@ Candidate number: K5013
 
 <div style="page-break-after: always;"></div>
 
-## TODO
-
-- [ ] Train from HPT result
-- [ ] Run E2E and jot down the final AUC
-- [ ] Run Tensorflow Projector
-
-
-
 ## 1. Introduction
 
 ### 1.1. Goal of the study
@@ -73,7 +65,7 @@ For a classification task, the first thing to do is to assess if there is some c
 
 <img src="figs/dataset/class_distribution.png" alt="class_distribution" style="zoom:72%;" />
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 1: Histogram of the class distribution in Tiny ImageNet</b></p>
 
 We can see on the above-plotted histogram that all classes have a number of examples between 370 and 420 while most of them have 400 examples. Thus, there is but little class imbalance. Hence, we won't have to downsample or upsample some of our classes.
 
@@ -81,17 +73,15 @@ We can see on the above-plotted histogram that all classes have a number of exam
 
 ### 2.3. Data split
 
-The test set is only used to evaluate our model and not used during the training.
+The test set is only used to evaluate our model and not used during the training. This guarantees that the model will not overfit on the test set. This could happen during the Hyperparameter Tuning or during the training because of the Early Stopping (cf [Section 4.3](###4.3. Early Stopping)).
 
-This guarantees 2 things that the model will not overfit on the test set. This could happen during the Hyperparameter Tuning or during the training because of the Early Stopping (cf [Section 4.3](###4.3. Early Stopping)).
+For the rest of the project, we will use a 70/20/10 ratio for the train/validation/test split.
 
 
 
 ### 2.4. Data Augmentation
 
-According to figure ???, each class has a number of examples close to 400 which is quite little. One solution is to implement Data Augmentation. In other words, we will perform random transformations of our training image while keeping the same label. Doing so will drastically increase the number of examples per class while making the model much more robust.
-
-
+According to figure 1, each class has a number of examples close to 400 which is quite little. One solution is to implement Data Augmentation. In other words, we will perform random transformations of our training image while keeping the same label. Doing so will drastically increase the number of examples per class while making the model much more robust.
 
 In Tensorflow, data augmentation is built-in in one of the model's layer itself which is implemented by the following code in `models/`:
 
@@ -114,8 +104,6 @@ def get_image_augmentation_layer() -> tf.keras.layers.Layer:
     return image_augmentation
 ```
 
-
-
 **Note:** There is a known issue on the [Tensorflow Github respository](https://github.com/keras-team/keras-cv/issues/581) about a significant slow down in performance when using image augmentation layers. For this reason, we will keep the `image_augmentation` option in our model to `False` but this feature is fully-functional in our project.
 
 
@@ -137,6 +125,12 @@ For our model, we can use a usual convolutional architecture like VGG-16, ResNet
 
 
 
+![Siamese Network - Diagram](figs/siamese_network/Siamese Network - Diagram.png)
+
+<p align = "center"> <b>Fig. 2: Diagram of a generic Siamese Network</b></p>
+
+
+
 ### 3.2. Triplet Loss
 
 For the best performance, let's implement the Triplet Loss introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*.
@@ -147,7 +141,7 @@ This is an example of valid triplet from our dataset:
 
 ![valid_triplet](figs/triplet_loss/valid_triplet.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 3</b></p>
 
 Mathematically speaking, we want:
 $$
@@ -164,7 +158,8 @@ with:
 
 ![triplets](figs/triplet_loss/triplets.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 4: Location of negatives with respect to a given anchor / positive pair in the 2D-space</b></p>
+
 
 Hence, the triplet loss $L$ can be defined as the following function:
 $$
@@ -193,19 +188,11 @@ For all experiments, we will keep the default margin value of $\alpha = 1$.
 
 ### 3.4. Feature Extractor and Transfer Learning
 
-Transfer learning is a machine learning technique where a model trained on one task is re-purposed on a second related task. Transfer learning is useful when the second task has a limited amount of labeled data, or when the data distribution between the two tasks is significantly different.
-
-In our case study, we will use transfer learning to avoid having to train our model from scratch as we only have limited computing power.
+Transfer learning is a machine learning technique where a model trained on one task is re-purposed on a second related task. Transfer learning is useful when the second task has a limited amount of labeled data, or when the data distribution between the two tasks is significantly different. In our case study, we will use transfer learning to avoid having to train our model from scratch as we only have limited computing power.
 
 Note that there are two main approaches to transfer learning: feature-based and fine-tuning. In feature-based transfer learning, the pre-trained model is used as a fixed feature extractor, where the output of the pre-trained model's layers are fed into a new model that is trained to perform the target task. For the sake of simplicity, we will stick to a feature-based transfer for our Image Matcher task.
 
-Tensorflow Hub is a repository of trained machine learning models ready to use. We will use it to get our fixed feature extractor.
-
-<img src="https://www.tensorflow.org/static/site-assets/images/project-logos/tensorflow-hub-logo-social.png" style="zoom:20%;" />
-
-<p align = "center"> <b>Fig. ????</b></p>
-
-We tried [ResNet50](https://tfhub.dev/tensorflow/resnet_50/feature_vector/1) and [EfficientNet](https://tfhub.dev/google/collections/efficientnet/1) as our feature extractor. After many experiments, we observed that `EfficientNet` is both more performant and quicker to train. Hence, we will make our transfer learning from EfficientNet.
+We tried pre-trained [ResNet50](https://tfhub.dev/tensorflow/resnet_50/feature_vector/1) and [EfficientNet](https://tfhub.dev/google/collections/efficientnet/1) from Tensorflow Hub as our feature extractor. After many experiments, we observed that `EfficientNet` is both more performant and quicker to train. Hence, we will make our transfer learning from EfficientNet.
 
 Note that the user can use any other feature extractor by adding the corresponding TfHub link in the `TF_HUB_MODELS` constant in `models/feature_model.py`. Here is a snippet of the script in question:
 
@@ -281,7 +268,7 @@ Dense --> BatchNorm --> ReLU --> Dropout
 end
 ```
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 5 Architecture of a Feed-Forward Block</b></p>
 
 
 
@@ -307,7 +294,7 @@ Thus, we will implement the final layers of our feature model as such:
 Note that there is a tradeoff for the number of units / embedding dimension of the final dense layer:
 
 - On the one hand, the higher the embedding dimension and the more information the model will be able to encode
-- On the other hand, if we choose an embedding space of high dimensions, the L2 distance between two points will tend to increase as the number of dimensions increases. This phenomenon is known as the "curse of dimensionality."
+- On the other hand, if we choose an embedding space with a very high dimension, the L2 distance ratio between the nearest and farthest points approaches 1, *i.e.* the points essentially become uniformly distant from each other. This phenomenon is known as the "curse of dimensionality."
 
 It is hard to assess which value of `embedding_dim` provides the best performance for our model. Therefore, we will perform a Hyperparameter Tuning in [Section 5](#5. Hyperparameter Tuning (HPT)) to pick its optimal value.
 
@@ -315,24 +302,15 @@ It is hard to assess which value of `embedding_dim` provides the best performanc
 
 #### 3.4.4. Complete architecture
 
-```mermaid
-graph LR
-  subgraph FeatureModel
-  	direction LR
-    A(Feature Extractor) --> B1(Feed-Forward Block #1) --> B2(Feed-Forward Block #2) --> B_others(...) -->BN(Feed-Forward Block #N) --> C(Embedding) --> D(L2 Normalization)
-  end
+Now we simply connect the previously built blocks in a sequential fashion:
 
-input[(Input image)] -.-> FeatureModel -.-> output[(Output vector)]
+![complete_architecture](figs/feature_model/complete_architecture.png)
 
-classDef data fill:#327da8;
-class input,output data;
-```
-
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 6: Architecture of the full Feature Model</b></p>
 
 
 
-### 3.5. ImageMatcher (E2E model)
+### 3.5. Image Matcher (E2E model)
 
 As previously mentioned at the end of [Section 3.3](3.3. Online TripletLoss), it is necessary to build a Siamese Network to implement our end-to-end model.
 
@@ -363,6 +341,9 @@ subgraph E2E Model
     class FeatureModel1,FeatureModel2,Diff,Norm model;
 end
 ```
+
+<p align = "center"> <b>Fig. 7: Architecture of the Image Matcher</b></p>
+
 
 To create a E2E model, just create an instance of `ImageMatcher` with the previously trained Feature Model as its input. The following snippet of code goes into more details about how the Image Matcher was build with respect to the above graph.
 
@@ -420,7 +401,7 @@ class ImageMatcher():
 
 ### 3.6. Metrics
 
-The main metric we will use is the ROC AUC which stands for Receiver Operating Characteristic's Area Under the Curve. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
+The main metric we will use is the ROC AUC which stands for *Receiver Operating Characteristic's Area Under the Curve*. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
 Moreover, plotting the ROC AUC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (*e.g.* for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
 
 Note that if a threshold is defined, then we will be able to consider the confusion matrix as a second metric.
@@ -543,7 +524,7 @@ n_trials: 15
 
 ![optimization_history](figs/hpt/optimization_history.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 8</b></p>
 
 **Observations:**
 
@@ -555,7 +536,7 @@ n_trials: 15
 
 ![intermediate_plot](figs/hpt/intermediate_plot.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 9</b></p>
 
 **Observations:**
 
@@ -567,7 +548,7 @@ n_trials: 15
 
 ![slice_plot](figs/hpt/slice_plot.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 10</b></p>
 
 **Observations:**
 
@@ -583,7 +564,7 @@ Another way to visualize the individual impact of each parameter is through a Pa
 
 ![parallel_plot](figs/hpt/parallel_plot.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 11</b></p>
 
 
 
@@ -593,7 +574,7 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 ![contour_plot](figs/hpt/contour_plot.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 12</b></p>
 
 **Observations:**
 
@@ -605,7 +586,7 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 ![hparam_importance](figs/hpt/hparam_importance.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 13</b></p>
 
 **Observations:**
 
@@ -618,7 +599,7 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 ![duration_importance](figs/hpt/duration_importance.png)
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 14</b></p>
 
 **Observations:**
 
@@ -628,7 +609,7 @@ Let's analyze the relationship between the embedding dimension and the dropout v
 
 <div style="page-break-after: always;"></div>
 
-## 6. FeatureModel training results
+## 6. Feature Model training results
 
 ### 6.1. Learning curve
 
@@ -636,7 +617,7 @@ We trained our model on Amazon SageMaker Lab with a GPU until we the validation 
 
 <img src="figs/training/learning_curve.png" alt="learning_curve" style="zoom: 67%;" />
 
-<p align = "center"> <b>Fig. ????</b></p>
+<p align = "center"> <b>Fig. 15: Learning curve for the Feature Model with the config returned by HPT </b></p>
 
 
 We can observe that the validation loss stops to decrease after roughly 100 epochs.
@@ -797,7 +778,7 @@ Note that because the dataset is composed of all pairs of images from the test s
 
 ![roc_auc](figs/training/roc_auc.png)
 
-<p align = "center"> <b>Fig. ????: ROC AUC Curve for the final model evaluated on the first 32000 pairs of the test set</b></p>
+<p align = "center"> <b>Fig. 16: ROC AUC Curve for the final model evaluated on the first 32000 pairs of the test set</b></p>
 
 
 
@@ -805,13 +786,23 @@ We can see that out model performs much better than a random guess model which w
 
 
 
-
+<div style="page-break-after: always;"></div>
 
 ## 8. Tensorflow Projector
 
 [Tensorflow Projector](https://projector.tensorflow.org) is a useful tool for data exploration and visualization, particularly for high-dimensional data. It can help gain insights into their data and identify trends and patterns that may not be apparent in lower-dimensional projections. Therefore, we will use Tensorflow Projector to visualize a 3D representation of our embeddings. If the model is trained correctly, then similar images should be close to each other.
 
-[insert different screenshots]
+<img src="figs/tensorboard_projector/tensorboard_projector.png" alt="tensorboard_projector" style="zoom:50%;" />
+
+<p align = "center"> <b>Fig. 17: Screenshot of the Tensorflow Projector UI with the enbeddings obtained with our approach</b></p>
+
+
+
+To use it yourself, open the following [link](http://projector.tensorflow.org/?config=https://raw.githubusercontent.com/tonywu71/image-matching-triplet-loss/edit-report/projector/efficientnet_ffblocks_2_emb_1024/projector_config.json) in your internet browser.
+
+
+
+**Important note:** The default visualization uses PCA to map our high-dimensional embedding space to a 3D space. However, this 3D space only amounts to a fraction of the total described variance (cf bottom-left statistic on Figure ???). Therefore, points that are far away in the 3D space are not necessarily far in the original embedding space.
 
 
 
