@@ -1,0 +1,13 @@
+{
+    "embeddings": [
+      {
+        "tensorName": "ImageMatcher Embeddings",
+        "tensorShape": [
+          1000,
+          1024
+        ],
+        "tensorPath": "https://github.com/tonywu71/image-matching-triplet-loss/blob/main/projector/efficientnet_ffblocks_2_emb_1024/vecs.tsv",
+        "metadataPath": "https://raw.githubusercontent.com/tonywu71/image-matching-triplet-loss/main/projector/efficientnet_ffblocks_2_emb_1024/meta.tsv?token=GHSAT0AAAAAABVQE5OIAGDWCYG7DHPUQBLMY55PDCA"
+      }
+    ]
+  }
