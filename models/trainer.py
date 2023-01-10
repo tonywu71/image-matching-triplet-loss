@@ -44,7 +44,7 @@ def train(config: dict, data_generator: DataGenerator) -> Path:
                         callbacks=callbacks)
 
     learning_curve_filepath = Path(f"logs/{config['experiment_name']}/learning_curve-{datetime.now().strftime('%Y%m%d-%H%M%S')}.png")
-    learning_curve_filepath.mkdir(parents=True, exist_ok=True)
+    learning_curve_filepath.parent.mkdir(parents=True, exist_ok=True)
     plot_learning_curve(history.history, fig_savepath=str(learning_curve_filepath))
     
     # --- Save the model ---
@@ -77,7 +77,7 @@ def resume_training(model_dirpath: str, config: dict, data_generator: DataGenera
             monitor="val_loss",
             mode="min",
             restore_best_weights=True),
-        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=5) # type: ignore
+        tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=HISTOGRAM_FREQ) # type: ignore
     ]
     
     # --- Train the model ---
@@ -86,7 +86,9 @@ def resume_training(model_dirpath: str, config: dict, data_generator: DataGenera
                         validation_data=ds_val,
                         callbacks=callbacks)
     
-    plot_learning_curve(history.history, fig_savepath=f"logs/{config['experiment_name']}/learning_curve.png")
+    learning_curve_filepath = Path(f"logs/{config['experiment_name']}/learning_curve-{datetime.now().strftime('%Y%m%d-%H%M%S')}.png")
+    learning_curve_filepath.parent.mkdir(parents=True, exist_ok=True)
+    plot_learning_curve(history.history, fig_savepath=str(learning_curve_filepath))
     
 
     # --- Save the model ---

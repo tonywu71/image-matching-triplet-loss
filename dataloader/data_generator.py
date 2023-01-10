@@ -6,7 +6,7 @@ import tensorflow as tf
 from dataloader.utils import plot_classes, plot_from_one_class
 from models.feature_model import IMAGE_SIZE_EFFICIENTNET
 
-BUFFER_SIZE = 1000
+BUFFER_SIZE = 20
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +93,8 @@ class DataGenerator():
         
         # --- Optimize pipeline ---
         self.train = self.train_unbatched.shuffle(buffer_size=BUFFER_SIZE).batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
-        self.val = self.val_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
-        self.test = self.test_unbatched.batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        self.val = self.val_unbatched.batch(self.batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+        self.test = self.test_unbatched.batch(self.batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
 
         logger.info(f"Successfully generated a DataGenerator object from `{directory}`")
         
