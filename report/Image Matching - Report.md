@@ -16,6 +16,8 @@ We want to create a model for the task of image matching data from the [Tiny Ima
 
 Image matching is a process in machine learning that involves finding similar images in a dataset. It can be used for a variety of applications, such as image retrieval, object recognition, and duplication detection.
 
+
+
 We will implement a distance-based matching model based on *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015* which introduced a state-of-the-art technique in face matching. Note that we will make the extra assumption that this technique can generalize to generic image matching.
 
 
@@ -107,7 +109,7 @@ def get_image_augmentation_layer() -> tf.keras.layers.Layer:
 
 ### 3.1. Siamese Network
 
-The Siamese Network was first introduced in *Siamese Neural Networks for One-shot Image Recognition, Koch et al., 2015* and allows to compute similarity between 2 inputs. Therefore, image matching can be implemented by outputting  1 (for similar images) if and only if the output of the Siamese Network is greater than a given threshold.
+The Siamese Network was first introduced in *Siamese Neural Networks for One-shot Image Recognition, Koch et al., 2015* and allows to compute similarity between 2 inputs. Therefore, image matching can be implemented by outputting 1 (for similar images) if and only if the output of the Siamese Network is greater than a given threshold.
 
 As the name suggests, a Siamese network consists of 2 branches that share the same weights to ensure the symmetry of our distance measure. The branches are usually made of convolution layers. We picked a convolution system for 2 reasons:
 
@@ -176,31 +178,17 @@ On top of that,  `tfa.losses.TripletSemiHardLoss()`  works with a single feature
 
 
 
+
+
 ### 3.4. Feature Extractor and Transfer Learning
 
 Transfer learning is a machine learning technique where a model trained on one task is re-purposed on a second related task. Transfer learning is useful when the second task has a limited amount of labeled data, or when the data distribution between the two tasks is significantly different. In our case study, we will use transfer learning to avoid having to train our model from scratch as we only have limited computing power.
 
 Note that there are two main approaches to transfer learning: feature-based and fine-tuning. In feature-based transfer learning, the pre-trained model is used as a fixed feature extractor, where the output of the pre-trained model's layers are fed into a new model that is trained to perform the target task. For the sake of simplicity, we will stick to a feature-based transfer for our Image Matcher task.
 
+
+
 We tried pre-trained [ResNet50](https://tfhub.dev/tensorflow/resnet_50/feature_vector/1) and [EfficientNet](https://tfhub.dev/google/collections/efficientnet/1) from Tensorflow Hub as our feature extractor. After many experiments, we observed that `EfficientNet` is both more performant and quicker to train. Hence, we will make our transfer learning from EfficientNet.
-
-Note that the user can use any other feature extractor by adding the corresponding TfHub link in the `TF_HUB_MODELS` constant in `models/feature_model.py`. Here is a snippet of the script in question:
-
-```python
-TF_HUB_MODELS = {
-    "resnet50": "https://tfhub.dev/tensorflow/resnet_50/feature_vector/1",
-    "efficientnet": "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_b0/feature_vector/2"
-}
-IMAGE_SIZE_EFFICIENTNET = (224, 224)
-
-
-def get_feature_extractor(model_name: str) -> tf.keras.Model:
-    if model_name in TF_HUB_MODELS:
-        feature_extractor = hub.KerasLayer(TF_HUB_MODELS[model_name], trainable=False)
-    else:
-        raise ValueError('Only "efficientnet" and "resnet50" are supported.')
-    return feature_extractor
-```
 
 
 
@@ -402,7 +390,7 @@ Note that if a threshold is defined, then we will be able to consider the confus
 
 ## 4. Training procedure
 
-### 4.1. Model configs
+### 4.1. Model config
 
 For clarity, every architecture / hyperparameter change will be done from a YAML configuration file. Here is an example of such config:
 
@@ -447,7 +435,7 @@ Early Stopping is motivated by 2 reasons:
 
 ## 5. Hyperparameter Tuning (HPT)
 
-Hyperparameter Tuning is based on [Optuna](https://optuna.org/). In this Python module the algorithm used to find the optimal set of hyperparameters is the Tree-Parzen Estimator. Ro keep it simple, the Tree-Parzen Estimator is based on the idea of Bayesian optimization, which involves iteratively sampling the hyperparameter space and updating a probabilistic model to guide the search towards promising regions of the space.
+Hyperparameter Tuning is based on [Optuna](https://optuna.org/). In this Python module the algorithm used to find the optimal set of hyperparameters is the Tree-Parzen Estimator. To keep it simple, the Tree-Parzen Estimator is based on the idea of Bayesian optimization, which involves iteratively sampling the hyperparameter space and updating a probabilistic model to guide the search towards promising regions of the space.
 
 To use Optuna for hyperparameter optimization, we first define the hyperparameter space and the objective function, and then create a study object. We then call the study's optimize method to begin the optimization process. The optimize method will repeatedly call the objective function with different hyperparameter configurations, using the sampler to generate the configurations and the pruner to decide whether to terminate a trial early. The optimize method will return the best hyperparameter configuration found by the optimization process.
 
@@ -616,7 +604,7 @@ We can observe that the validation loss stops to decrease after roughly 100 epoc
 
 ### 6.2. Tensorboard
 
-TensorBoard is a web-based tool provided with TensorFlow that allows users to interactively visualize and explore TensorFlow runs and experiments. It can help you understand and debug your TensorFlow code, and it can also be used for monitoring performance and evaluating results.
+TensorBoard is a web-based tool provided with TensorFlow that allows users to interactively visualize and explore TensorFlow runs and experiments.
 
 It can be run by running the following code:
 
