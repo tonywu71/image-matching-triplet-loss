@@ -18,13 +18,13 @@ PROJECTOR_DIRPATH = Path("projector")
 
 
 def save_embeddings_and_metadata(model: tf.keras.Model,
-                                 ds_val: tf.data.Dataset,
+                                 ds_test: tf.data.Dataset,
                                  experiment_name: str) -> Tuple[str, str]:
     savedir = PROJECTOR_DIRPATH / f"{experiment_name}"
     savedir.mkdir(parents=True, exist_ok=True)
     
     # Evaluate the network:
-    embeddings = model.predict(ds_val)
+    embeddings = model.predict(ds_test)
 
     # Save test embeddings for visualization in projector:
     vecs_filepath = savedir / "vecs.tsv"
@@ -34,7 +34,7 @@ def save_embeddings_and_metadata(model: tf.keras.Model,
     # Save metadata for projector:
     meta_filepath = savedir / "meta.tsv"
     with open(meta_filepath, 'w', encoding='utf-8') as f:
-        for img, labels in tfds.as_numpy(ds_val): # type: ignore
+        for img, labels in tfds.as_numpy(ds_test): # type: ignore
             [f.write(str(x) + "\n") for x in labels]
 
     logger.info(f"Metadata successfully saved at `{meta_filepath}`.")
