@@ -60,7 +60,7 @@ As the name suggests, a Siamese network consists of 2 branches that share the sa
 
 For our model, we can use a usual convolutional architecture like VGG-16, ResNet50 or Inception. Doing so will also allow to use transfer-learning to speed up our training.
 
-![Siamese Network - Diagram](report/figs/siamese_network/Siamese Network - Diagram.png)
+<img src="report/figs/siamese_network/Siamese Network - Diagram.png" alt="Siamese Network - Diagram" style="zoom:100%;" />
 
 <p align = "center"> <b>Diagram of a generic Siamese Network</b></p>
 
@@ -75,10 +75,10 @@ For the best performance, let's implement the Triplet Loss introduced in *FaceNe
 <img src="report/figs/triplet_loss/valid_triplet.png" alt="valid_triplet" style="zoom:67%;" />
 
 Mathematically speaking, we want:
-$$
-\forall\left(f\left(x_i^a\right), f\left(x_i^p\right), f\left(x_i^n\right)\right) \in \mathcal{T}, \ 
-\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2+\alpha<\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2
-$$
+
+$$\forall\left(f\left(x_i^a\right), f\left(x_i^p\right), f\left(x_i^n\right)\right) \in \mathcal{T}, \ 
+\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2+\alpha<\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2$$
+
 with:
 
 - $f$ the embedding function
@@ -87,15 +87,15 @@ with:
 
 
 
-<img src="report/figs/triplet_loss/triplets.png" alt="triplets" style="zoom:67%;" />
+<p align="center">
+  <img src="report/figs/triplet_loss/triplets.png" alt="triplets" style="zoom:67%;" />
+</p>
 
 <p align = "center"> <b>Location of negatives with respect to a given anchor / positive pair in the 2D-space</b></p>
 
-
 Hence, the triplet loss $L$ can be defined as the following function:
-$$
-L = \sum_i^N\left[\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2-\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2+\alpha\right]
-$$
+
+$$L = \sum_i^N\left[\left\|f\left(x_i^a\right)-f\left(x_i^p\right)\right\|_2^2-\left\|f\left(x_i^a\right)-f\left(x_i^n\right)\right\|_2^2+\alpha\right]$$
 
 
 
@@ -203,8 +203,6 @@ To visualize the results of our HPT study, open the `hpt_visualizer.ipynb` noteb
 ## 6. Prediction example
 
 First, let's predict the similarity score for 2 images picked in a valid triplet from the training set. As the triplet is likely to have been already seen by the model, we expect to have the anchor-positive score greater than the anchor-negative one by at least the default margin value of $\alpha = 1$.
-
-Let's use the same triplet that was shown in [Section 3.2](###3.2. Triplet Loss):
 
 <img src="report/figs/triplet_loss/valid_triplet.png" alt="valid_triplet" style="zoom:67%;" />
 
