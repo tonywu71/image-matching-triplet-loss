@@ -130,7 +130,7 @@ For the best performance, let's implement the Triplet Loss introduced in *FaceNe
 
 **Goal:** We want to ensure that an image $x_i^a$ (*anchor*) of a specific class is closer to all other images  $x_i^p$ (*positive*) of the same person than it is to any image  $x_i^n$ (*negative*) of any other person. The following figure provides an example of valid triplet from our dataset:
 
-![valid_triplet](figs/triplet_loss/valid_triplet.png)
+<img src="figs/triplet_loss/valid_triplet.png" alt="valid_triplet" style="zoom:67%;" />
 
 <p align = "center"> <b>Fig. 3</b></p>
 
@@ -147,7 +147,7 @@ with:
 
 
 
-![triplets](figs/triplet_loss/triplets.png)
+<img src="figs/triplet_loss/triplets.png" alt="triplets" style="zoom:67%;" />
 
 <p align = "center"> <b>Fig. 4: Location of negatives with respect to a given anchor / positive pair in the 2D-space</b></p>
 
@@ -676,7 +676,7 @@ First, let's predict the similarity score for 2 images picked in a valid triplet
 
 Let's use the same triplet that was shown in [Section 3.2](###3.2. Triplet Loss):
 
-![valid_triplet](figs/triplet_loss/valid_triplet.png)
+<img src="figs/triplet_loss/valid_triplet.png" alt="valid_triplet" style="zoom:67%;" />
 
 ```python
 output_1 = image_matcher.predict(anchor, positive)
@@ -762,7 +762,7 @@ Note that because the dataset is composed of all pairs of images from the test s
 
 ### 7.4. ROC AUC Curve
 
-![roc_auc](figs/training/roc_auc.png)
+<img src="figs/training/roc_auc.png" alt="roc_auc" style="zoom:67%;" />
 
 <p align = "center"> <b>Fig. 16: ROC AUC Curve for the final model evaluated on the first 32000 pairs of the test set</b></p>
 
@@ -785,7 +785,7 @@ We can see that out model performs much better than a random guess model which w
 
 To use it yourself, open the following [link](http://projector.tensorflow.org/?config=https://raw.githubusercontent.com/tonywu71/image-matching-triplet-loss/edit-report/projector/efficientnet_ffblocks_2_emb_1024/projector_config.json) in your internet browser.
 
-**Important note:** The default visualization uses PCA to map our high-dimensional embedding space to a 3D space. However, this 3D space only amounts to a fraction of the total described variance (cf bottom-left statistic on Figure ???). Therefore, points that are far away in the 3D space are not necessarily far in the original embedding space.
+**Important note:** The default visualization uses PCA to map our high-dimensional embedding space to a 3D space. However, this 3D space only amounts to a fraction of the total described variance (cf bottom-left statistic on Figure 17). Therefore, points that are far away in the 3D space are not necessarily far in the original embedding space.
 
 
 
