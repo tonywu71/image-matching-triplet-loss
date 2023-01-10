@@ -43,7 +43,7 @@ Particular care has been taken in making the code clean, efficient and modular.
 
 - `hpt.py` is used to perform Hyperparameter Tuning (HPT)
 - `train.py` is used to train a Feature Model (cf [Section 3.4](3.4. Feature Model))
-- `test_e2e.ipynb` is used to create and evaluate an ImageMatcher model
+- `evaluate_e2e_model.ipynb` is used to create and evaluate an ImageMatcher model
 
 
 
