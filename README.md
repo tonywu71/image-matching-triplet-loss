@@ -17,7 +17,13 @@ We will implement a distance-based matching model based on *FaceNet: A Unified E
 
 
 
-### 1.2. Main files
+### 1.2. Report
+
+This README is a short-version of the PDF report located in the `report` directory written as part of a coursework for the Computer Vision course of the MLMI at Cambridge. Note that this whole project was coded entirely from scratch by myself.
+
+
+
+### 1.3. Main files
 
 - `hpt.py` is used to perform Hyperparameter Tuning (HPT)
 - `train.py` is used to train a Feature Model (cf [Section 3.5](3.5. Feature Model))
@@ -25,7 +31,7 @@ We will implement a distance-based matching model based on *FaceNet: A Unified E
 
 
 
-## 1.3. Environment setup
+### 1.4. Environment setup
 
 Create an environment with `python 3.10.8`  and run the following command to install the required dependencies:
 
