@@ -43,7 +43,7 @@ Particular care has been taken in making the code clean, efficient and modular.
 
 - `hpt.py` is used to perform Hyperparameter Tuning (HPT)
 - `train.py` is used to train a Feature Model (cf [Section 3.4](3.4. Feature Model))
-- `test_e2e.ipynb` is used to create and evaluate an ImageMatcher model
+- `evaluate_e2e_model.ipynb` is used to create and evaluate an ImageMatcher model
 
 
 
@@ -179,9 +179,11 @@ The previously described model uses hard negatives for the triplet loss: we will
 
 The first way to produce such triplets is to search through the whole datasets for these hard negatives. Even worse, this has to be done before each epoch as the change in weights implies a change in which example is a hard negative. This procedure is called offline triplet mining and is clearly not efficient. 
 
-Instead, we will use a different method called online triplet mining which was also introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*. Not only is this approach faster, but it also the easiest way to implement it using Tensorflow's `tfa.losses.TripletSemiHardLoss()` function. What this functions does is finding these the semi-hard negatives in each batch which are defined by the examples $n$ such that $d(a, p) < d(a, n) < d(a, p) + margin$.
+Instead, we will use a different method called online triplet mining which was also introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*. Not only is this approach faster, but it also the easiest way to implement it using Tensorflow's `tfa.losses.TripletSemiHardLoss()` function. What this functions does is finding these the semi-hard negatives in each batch which are defined by the examples $n$ such that $d(a, p) < d(a, n) < d(a, p) + \alpha$.
 
 On top of that,  `tfa.losses.TripletSemiHardLoss()`  works with a single feature extractor so there is no need to create the Siamese Network for the training.
+
+For all experiments, we will keep the default margin value of $\alpha = 1$.
 
 
 
@@ -663,11 +665,149 @@ tensorboard --logdir logs/efficientnet_ffblocks_2_emb_1024
 
 ## 7. ImageMatcher results (E2E)
 
-#TOFILL: ...
+### 7.1. Model Summary
+
+For reference, this is the ImageMatcher summary that match the graph from [Section 3.5](###3.5. ImageMatcher (E2E model)):
+
+```
+Model: "image_matching"
+__________________________________________________________________________________________________
+ Layer (type)                   Output Shape         Param #     Connected to                     
+==================================================================================================
+ input_1 (InputLayer)           [(None, 2, 224, 224  0           []                               
+                                , 3)]                                                             
+                                                                                                  
+ tf.__operators__.getitem (Slic  (None, 224, 224, 3)  0          ['input_1[0][0]']                
+ ingOpLambda)                                                                                     
+                                                                                                  
+ tf.__operators__.getitem_1 (Sl  (None, 224, 224, 3)  0          ['input_1[0][0]']                
+ icingOpLambda)                                                                                   
+                                                                                                  
+ feature_model (Sequential)     (None, 1024)         6972752     ['tf.__operators__.getitem[0][0]'
+                                                                 , 'tf.__operators__.getitem_1[0][
+                                                                 0]']                             
+                                                                                                  
+ lambda (Lambda)                (None,)              0           ['feature_model[0][0]',          
+                                                                  'feature_model[1][0]']          
+                                                                                                  
+==================================================================================================
+Total params: 6,972,752
+Trainable params: 1,051,904
+Non-trainable params: 5,920,848
+__________________________________________________________________________________________________
+```
 
 
 
-## 6. Tensorflow Projector
+### 7.2. Prediction example
+
+First, let's predict the similarity score for 2 images picked in a valid triplet from the training set. As the triplet is likely to have been already seen by the model, we expect to have the anchor-positive score greater than the anchor-negative one by at least the default margin value of $\alpha = 1$.
+
+
+
+Let's use the same triplet that was shown in [Section 3.2](###3.2. Triplet Loss):
+
+![valid_triplet](figs/triplet_loss/valid_triplet.png)
+
+```python
+output_1 = image_matcher.predict(anchor, positive)
+output_1
+
+> <tf.Tensor: shape=(1,), dtype=float32, numpy=array([-0.03183275], dtype=float32)>
+```
+
+```python
+output_2 = image_matcher.predict(anchor, negative)
+output_2
+
+> <tf.Tensor: shape=(1,), dtype=float32, numpy=array([-1.5196313], dtype=float32)>
+```
+
+```python
+margin = 1
+assert output_1 > output_2 + margin
+print("The model is a priori well trained.")
+```
+
+
+
+To conclude, the model is *a priori* well trained and can at least capture the similarity signal for instances of our training set. Let's now evaluate the model generalization power on the test set.
+
+
+
+### 7.3. Pairwise dataset
+
+To ensure our model is compatible with Tensorflow's metrics, we will first have to create a `tf.data.Dataset` instance that yields all possible image pairs from the test set.
+
+Here is our implementation:
+
+```python
+def get_generator_2_combination_from_datasets(dataset: tf.data.Dataset) -> Callable:
+    ds_1 = dataset
+    ds_2 = dataset
+    
+    def gen_2_combination_from_datasets():
+        for x_1 in ds_1:
+            for x_2 in ds_2:
+                yield x_1, x_2
+    
+    return gen_2_combination_from_datasets
+
+
+def match_mapping(x, y) -> Tuple[tf.Tensor, tf.Tensor]:
+    (x_1, cls_1), (x_2, cls_2) = x, y
+    return (tf.stack([x_1, x_2], axis=0), tf.cast(cls_1 == cls_2, dtype=tf.uint8))  # type: ignore
+
+
+def get_pairwise_dataset(dataset: tf.data.Dataset, image_size: Tuple[int, int]) -> tf.data.Dataset:
+    """Get the pairwise dataset for our end-to-end model. Note that the output Dataset is not batched.
+
+    Args:
+        data_generator (DataGenerator)
+        image_size (Tuple[int, int])
+
+    Returns:
+        tf.data.Dataset
+    """
+    ds_pairs = tf.data.Dataset.from_generator(
+        get_generator_2_combination_from_datasets(dataset=dataset),
+        output_signature=(
+              (
+                  tf.TensorSpec(shape=(*image_size, 3), dtype=tf.float32),  # type: ignore
+                  tf.TensorSpec(shape=(), dtype=tf.uint8)  # type: ignore
+              ),
+              (
+                  tf.TensorSpec(shape=(*image_size, 3), dtype=tf.float32),  # type: ignore
+                  tf.TensorSpec(shape=(), dtype=tf.uint8)  # type: ignore
+              )
+        ))
+    
+    ds_pairs = ds_pairs.map(match_mapping)
+    
+    return ds_pairs
+```
+
+
+
+Note that because the dataset is composed of all pairs of images from the test set, we will have $\binom{n}{2}$ instances with $n = Card(\text{testset})$. For $n=10000$, this would amount to $49995000$ examples. Therefore, we will only evaluate our model on a fraction of the test set by specifying the number of 32-example batches we want to use.
+
+
+
+### 7.4. ROC AUC Curve
+
+![roc_auc](figs/training/roc_auc.png)
+
+<p align = "center"> <b>Fig. ????: ROC AUC Curve for the final model evaluated on the first 32000 pairs of the test set</b></p>
+
+
+
+We can see that out model performs much better than a random guess model which would have had a AUC of $0.5$. Hence, we can confidently validate the model's performance.
+
+
+
+
+
+## 8. Tensorflow Projector
 
 [Tensorflow Projector](https://projector.tensorflow.org) is a useful tool for data exploration and visualization, particularly for high-dimensional data. It can help gain insights into their data and identify trends and patterns that may not be apparent in lower-dimensional projections. Therefore, we will use Tensorflow Projector to visualize a 3D representation of our embeddings. If the model is trained correctly, then similar images should be close to each other.
 
@@ -677,7 +817,7 @@ tensorboard --logdir logs/efficientnet_ffblocks_2_emb_1024
 
 <div style="page-break-after: always;"></div>
 
-## 7. Conclusion
+## 9. Conclusion
 
 We have implemented an end-to-end machine learning model that is able to tell if two images are similar. This model has various applications, such as image retrieval, object recognition, and duplication detection. The project we designed is all the more interesting that the whole training process is data-agnostic *i.e.* the Image Matcher can be easily retrained for another dataset.
 
@@ -685,7 +825,7 @@ We have implemented an end-to-end machine learning model that is able to tell if
 
 <div style="page-break-after: always;"></div>
 
-## 8. Appendix
+## 10. Appendix
 
 |      |  loss | dropout | embedding_dim | intermediate_ff_block_units |
 | ---: | ----: | ------: | ------------: | :-------------------------- |

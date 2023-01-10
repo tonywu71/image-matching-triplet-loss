@@ -1,6 +1,5 @@
 from typing import Tuple, Callable
 import tensorflow as tf
-from dataloader.data_generator import DataGenerator
 
 
 def get_generator_2_combination_from_datasets(dataset: tf.data.Dataset) -> Callable:
