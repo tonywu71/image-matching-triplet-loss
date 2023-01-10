@@ -14,14 +14,7 @@ Candidate number: K5013
 
 We want to create a model for the task of image matching data from the [Tiny ImageNet Visual Recognition Challenge dataset](https://paperswithcode.com/dataset/tiny-imagenet).
 
-Image matching is a process in machine learning that involves finding similar images in a dataset. Image matching can be used for a variety of applications, such as image retrieval, object recognition, and duplication detection.
-
-There are several approaches to image matching in machine learning, including:
-
-1. Feature-based matching: In this approach, images are represented as sets of features, such as points, lines, or corners, and matching is performed based on the similarity of these features.
-2. Distance-based matching: In this approach, images are represented as vectors in a high-dimensional space and matching is performed based on the distance between the vectors.
-3. Hash-based matching: In this approach, images are represented as hashes, which are compact, fixed-length representations of the images. Matching is performed by comparing the hashes of the images.
-4. Deep learning-based matching: In this approach, images are fed into a convolutional neural network (CNN) trained to recognize patterns in the images. Matching is performed based on the output of the CNN.
+Image matching is a process in machine learning that involves finding similar images in a dataset. It can be used for a variety of applications, such as image retrieval, object recognition, and duplication detection.
 
 We will implement a distance-based matching model based on *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015* which introduced a state-of-the-art technique in face matching. Note that we will make the extra assumption that this technique can generalize to generic image matching.
 
@@ -34,7 +27,7 @@ Particular care has been taken in making the code clean, efficient and modular.
 #### 1.2.1. Main files
 
 - `hpt.py` is used to perform Hyperparameter Tuning (HPT)
-- `train.py` is used to train a Feature Model (cf [Section 3.4](3.4. Feature Model))
+- `train.py` is used to train a Feature Model (cf [Section 3.5](3.5. Feature Model))
 - `evaluate_e2e_model.ipynb` is used to create and evaluate an ImageMatcher model
 
 
@@ -61,7 +54,7 @@ The Tiny ImageNet Visual Recognition Challenge dataset contains images from 200 
 
 ### 2.2. Class Distribution
 
-For a classification task, the first thing to do is to assess if there is some class imbalance. 
+For a classification task, the first thing to do is to assess if there is some class imbalance.
 
 <img src="figs/dataset/class_distribution.png" alt="class_distribution" style="zoom:72%;" />
 
@@ -81,7 +74,7 @@ For the rest of the project, we will use a 70/20/10 ratio for the train/validati
 
 ### 2.4. Data Augmentation
 
-According to figure 1, each class has a number of examples close to 400 which is quite little. One solution is to implement Data Augmentation. In other words, we will perform random transformations of our training image while keeping the same label. Doing so will drastically increase the number of examples per class while making the model much more robust.
+According to Figure 1, each class has a number of examples close to 400 which is quite little. One solution is to implement data augmentation. In other words, we will perform random transformations of our training image while keeping the same label. Doing so will drastically increase the number of examples per class while making the model much more robust.
 
 In Tensorflow, data augmentation is built-in in one of the model's layer itself which is implemented by the following code in `models/`:
 
@@ -135,9 +128,7 @@ For our model, we can use a usual convolutional architecture like VGG-16, ResNet
 
 For the best performance, let's implement the Triplet Loss introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*.
 
-**Goal:** We want to ensure that an image $x_i^a$ (*anchor*) of a specific class is closer to all other images  $x_i^p$ (*positive*) of the same person than it is to any image  $x_i^n$ (*negative*) of any other person.
-
-This is an example of valid triplet from our dataset:
+**Goal:** We want to ensure that an image $x_i^a$ (*anchor*) of a specific class is closer to all other images  $x_i^p$ (*positive*) of the same person than it is to any image  $x_i^n$ (*negative*) of any other person. The following figure provides an example of valid triplet from our dataset:
 
 ![valid_triplet](figs/triplet_loss/valid_triplet.png)
 
@@ -170,19 +161,18 @@ $$
 
 ### 3.3. Online TripletLoss
 
-The previously described model uses hard negatives for the triplet loss: we will refer it as a hard triplet loss.
+The previously described model uses hard negatives for the triplet loss: we will refer it as a hard triplet loss. The first method to produce such triplets is to search through the whole datasets for these hard negatives. Even worse, this has to be done before each epoch as the change in weights implies a change in which example is a hard negative. This procedure is called *offline* triplet mining and is clearly not efficient. 
 
-The first way to produce such triplets is to search through the whole datasets for these hard negatives. Even worse, this has to be done before each epoch as the change in weights implies a change in which example is a hard negative. This procedure is called offline triplet mining and is clearly not efficient. 
-
-Instead, we will use a different method called online triplet mining which was also introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*. Not only is this approach faster, but it also the easiest way to implement it using Tensorflow's `tfa.losses.TripletSemiHardLoss()` function. What this functions does is finding these the semi-hard negatives in each batch which are defined by the examples $n$ such that $d(a, p) < d(a, n) < d(a, p) + \alpha$.
+Instead, we will use a different method called *online* triplet mining which was also introduced in *FaceNet: A Unified Embedding for Face Recognition and Clustering, Schroff et al., 2015*. Not only is this approach faster, but it also the easiest way to implement it using Tensorflow's `tfa.losses.TripletSemiHardLoss()` function. What this functions does is finding these the semi-hard negatives in each batch which are defined by the examples $n$ such that $d(a, p) < d(a, n) < d(a, p) + \alpha$.
 
 On top of that,  `tfa.losses.TripletSemiHardLoss()`  works with a single feature extractor so there is no need to create the Siamese Network for the training.
 
-For all experiments, we will keep the default margin value of $\alpha = 1$.
 
 
+**Notes:**
 
-**Note:** Nonetheless, it will be necessary to build a Siamese Network when we will implement our end-to-end model as we expect the latter to take 2 images as inputs.
+- For all experiments, we will keep the default margin value of $\alpha = 1$
+- It will be necessary to build a Siamese Network when we will implement our end-to-end model as we expect the latter to take 2 images as inputs.
 
 
 
@@ -214,15 +204,15 @@ def get_feature_extractor(model_name: str) -> tf.keras.Model:
 
 
 
-### 3.4. Feature Model
+### 3.5. Feature Model
 
-#### 3.4.1. From 3D to 2D with `Flatten`
+#### 3.5.1. From 3D to 2D with `Flatten`
 
 The feature model obtained from TfHub returns a 3D tensor because of its convolutional nature. To process it any further, we will first use a `tf.keras.layers.Flatten`  layer to map it to a 2D tensor.
 
 
 
-#### 3.4.2. Feed-Forward Blocks
+#### 3.5.2. Feed-Forward Blocks
 
 Next, we will add some intermediate feed-forward blocks to increase the depth of our network and hopefully get better performance. A feed-forward block is a custom layer defined by the following class in `models/ff_block.py`:
 
@@ -272,7 +262,7 @@ end
 
 
 
-#### 3.4.3. Embedding and L2 normalization
+#### 3.5.3. Embedding and L2 normalization
 
 Finally, we need to project our vectors to a vector space with the given embedding dimension. According to the *FaceNet* paper, we also want constrain this embedding to live on the d-dimensional hypersphere *i.e.*:
 $$
@@ -300,7 +290,7 @@ It is hard to assess which value of `embedding_dim` provides the best performanc
 
 
 
-#### 3.4.4. Complete architecture
+#### 3.5.4. Complete architecture
 
 Now we simply connect the previously built blocks in a sequential fashion:
 
@@ -310,7 +300,7 @@ Now we simply connect the previously built blocks in a sequential fashion:
 
 
 
-### 3.5. Image Matcher (E2E model)
+### 3.6. Image Matcher (E2E model)
 
 As previously mentioned at the end of [Section 3.3](3.3. Online TripletLoss), it is necessary to build a Siamese Network to implement our end-to-end model.
 
@@ -399,7 +389,7 @@ class ImageMatcher():
 
 
 
-### 3.6. Metrics
+### 3.7. Metrics
 
 The main metric we will use is the ROC AUC which stands for *Receiver Operating Characteristic's Area Under the Curve*. This metric is suitable for classification tasks and is graph showing the performance of a classification model at all classification thresholds.
 Moreover, plotting the ROC AUC curve will help to understand the tradeoff between the True Positive Rate (TPR) and the False Positive Rate (FPR). Eventually and depending on the real-world application of our model, we will pick a threshold (*e.g.* for face recognition we might prefer that all positive guesses are correct even though we might miss a few similar face pairs).
@@ -417,7 +407,7 @@ Note that if a threshold is defined, then we will be able to consider the confus
 For clarity, every architecture / hyperparameter change will be done from a YAML configuration file. Here is an example of such config:
 
 ```yaml
-experiment_name: "efficientnet_with_ff_block"
+experiment_name: "efficientnet_with_ff_block_test"
 
 seed: 0
 image_augmentation: False
@@ -684,8 +674,6 @@ ________________________________________________________________________________
 
 First, let's predict the similarity score for 2 images picked in a valid triplet from the training set. As the triplet is likely to have been already seen by the model, we expect to have the anchor-positive score greater than the anchor-negative one by at least the default margin value of $\alpha = 1$.
 
-
-
 Let's use the same triplet that was shown in [Section 3.2](###3.2. Triplet Loss):
 
 ![valid_triplet](figs/triplet_loss/valid_triplet.png)
@@ -768,8 +756,6 @@ def get_pairwise_dataset(dataset: tf.data.Dataset, image_size: Tuple[int, int]) 
     return ds_pairs
 ```
 
-
-
 Note that because the dataset is composed of all pairs of images from the test set, we will have $\binom{n}{2}$ instances with $n = Card(\text{testset})$. For $n=10000$, this would amount to $49995000$ examples. Therefore, we will only evaluate our model on a fraction of the test set by specifying the number of 32-example batches we want to use.
 
 
@@ -797,10 +783,7 @@ We can see that out model performs much better than a random guess model which w
 <p align = "center"> <b>Fig. 17: Screenshot of the Tensorflow Projector UI with the enbeddings obtained with our approach</b></p>
 
 
-
 To use it yourself, open the following [link](http://projector.tensorflow.org/?config=https://raw.githubusercontent.com/tonywu71/image-matching-triplet-loss/edit-report/projector/efficientnet_ffblocks_2_emb_1024/projector_config.json) in your internet browser.
-
-
 
 **Important note:** The default visualization uses PCA to map our high-dimensional embedding space to a 3D space. However, this 3D space only amounts to a fraction of the total described variance (cf bottom-left statistic on Figure ???). Therefore, points that are far away in the 3D space are not necessarily far in the original embedding space.
 
@@ -835,6 +818,5 @@ We have implemented an end-to-end machine learning model that is able to tell if
 |   12 | 0.899 |     0.5 |          1024 | [1024, 512]                 |
 |   13 |  0.72 |     0.3 |          1024 | [512, 256]                  |
 |   14 | 0.728 |     0.2 |           512 | [512, 256]                  |
-
 
 
